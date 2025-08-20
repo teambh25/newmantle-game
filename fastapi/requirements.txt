@@ -1,0 +1,15 @@
+fastapi
+uvicorn[standard]
+pydantic-settings
+loguru
+
+# Redis
+redis
+
+# Test
+httpx
+pytest
+pytest-mock
+pytest-cov
+pytest-asyncio
+flake8

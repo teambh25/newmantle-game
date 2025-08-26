@@ -17,8 +17,8 @@ services:
       - 6379:6379 # ${REDIS_BINDING_PORT}:${REDIS_PORT}
     volumes:
       - ./redis/data:/data
-      # - ./redis/conf/redis.conf:/usr/local/etc/redis/redis.conf:ro
-    # restart: always
+      - ./redis/conf/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    restart: always
     command: redis-server /usr/local/etc/redis/redis.conf
 
   # nginx:

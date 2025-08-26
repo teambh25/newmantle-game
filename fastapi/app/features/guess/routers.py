@@ -9,7 +9,7 @@
 # from app.cores.cache import get_redis
 # from app.database.session import get_db
 # from app.services import QuizService
-# from app.common.exceptions import Error, NoDateInDailyQuiz, NoWordInDB
+# from app.exceptions import Error, NoDateInDailyQuiz, NoWordInDB
 
 # router = APIRouter(prefix="/guess", tags=["Guess"])
 

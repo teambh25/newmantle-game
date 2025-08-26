@@ -3,7 +3,7 @@
 # from fastapi import Depends, APIRouter, HTTPException, Path
 # from fastapi.responses import JSONResponse
 
-# from app.common.config import configs
+# from app.cores.config import configs
 # from dependencies import get_daily_quiz
 # from app.services import QuizService
 # from app.common.utils import extract_initial_consonant

@@ -1,3 +1,5 @@
+from redis import exceptions as redis_exceptions
+
 class BaseAppException(Exception):
     def __init__(self, msg=''):
         self.msg = msg
@@ -6,9 +8,16 @@ class BaseAppException(Exception):
     def __str__(self):
         return f'{self.__class__.__name__}: {self.msg}'
 
+
 class AuthenticationFailed(BaseAppException):
     """invalid authentication credentials"""
     pass
+
+
+class InvalidParameter(BaseAppException):
+    """raised when an parameter violates a defined business/domain rule"""
+    pass
+
 
 # class EntityDoesNotExist(BaseAppException):
 #     """database returns nothing"""
@@ -22,8 +31,4 @@ class AuthenticationFailed(BaseAppException):
 
 # class InvalidEntity(BaseAppException):
 #     """raised when an entity violates a defined business/domain rule"""
-#     pass
-
-# class InvalidParameter(BaseAppException):
-#     """raised when an parameter violates a defined business/domain rule"""
 #     pass

@@ -1,30 +1,35 @@
-from dataclasses import dataclass, fields
+from dataclasses import dataclass
 import datetime
 
 import redis.asyncio as redis
+
+ANSWER_INDICATOR = "answer"
+
 
 def create_redis_pool(url: str, max_connection: int):
     pool = redis.ConnectionPool.from_url(
         url,
         max_connections=max_connection,
-        decode_responses=True
+        decode_responses=True,
+        socket_connect_timeout=2,  
+        socket_timeout=2,
+        # socket_keepalive=True,
     )
     return pool
 
 
 @dataclass(frozen=True)
 class RedisKeys:
-    answers: str
-    scores: str
-    ranking: str
-    NUM_KEYS = 3
+    answers_key: str
+    scores_key: str
+    ranking_key: str
 
     @classmethod
     def from_date(cls, date: datetime.date):
         return cls(
-            answers=f"quiz:{date}:answers",
-            scores=f"quiz:{date}:scores",
-            ranking=f"quiz:{date}:ranking",
+            answers_key=f"quiz:{date}:answers",
+            scores_key=f"quiz:{date}:scores",
+            ranking_key=f"quiz:{date}:ranking",
         )
     
     @staticmethod

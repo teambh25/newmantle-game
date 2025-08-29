@@ -1,28 +1,28 @@
-from fastapi import FastAPI, Request, HTTPException
-from fastapi.responses import JSONResponse
-from loguru import logger
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.cores.event import lifespan
+from app.cores.config import settings
 from app.features.admin.routers import admin_router
 import app.exceptions as exceptions
+from app.features.game.routers import game_router
+
+from loguru import logger
 
 app = FastAPI(lifespan=lifespan)
-
 app.include_router(admin_router)
-# app.include_router(guess.router)
-# app.include_router(hint.router)
-
-logger.remove()  # Remove default console handler
-logger.add(
-    "./logs/{time:YYYY-MM-DD!UTC}_UTC.log",
-    rotation="15:00",  # Rotate every KST(UTC+9) midnight
-    retention="30 days",  # Keep 30 days of logs
-    encoding="utf-8",
-    format="{time:YYYY-MM-DD HH:mm:ss!UTC} | {level} | {message}"
+app.include_router(game_router)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.allowed_origins,
+    allow_origin_regex=settings.allowed_origin_regex,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 EXCEPTION_HANDLERS = {
-    Exception: exceptions.unexpected_exception_handler,
+    Exception: exceptions.global_exception_handler,
     exceptions.AuthenticationFailed: exceptions.authentication_exception_handler,
 }
 

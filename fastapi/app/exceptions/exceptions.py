@@ -1,5 +1,3 @@
-from redis import exceptions as redis_exceptions
-
 class BaseAppException(Exception):
     def __init__(self, msg=''):
         self.msg = msg

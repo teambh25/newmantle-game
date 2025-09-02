@@ -8,7 +8,7 @@ services:
       - "8080:5000"
     volumes:
       - ./fastapi:/src
-      - .env:/src/.env
+      - ./.env:/src/.env
     depends_on:
       - redis 
   redis:
@@ -20,18 +20,22 @@ services:
       - ./redis/conf/redis.conf:/usr/local/etc/redis/redis.conf:ro
     restart: always
     command: redis-server /usr/local/etc/redis/redis.conf
-  # nginx:
-  #   image: nginx:latest
-  #   container_name: nginx
-  #   ports:
-  #     - "7000:80"
-  #     - "7001:443"
-  #   volumes:
-  #     - ./proxy/nginx/prod.conf:/etc/nginx/conf.d/prod.conf
-  #     - ./proxy/certbot/conf:/etc/letsencrypt
-    # depends_on:
-    #   - certbot
-  # certbot:
-  #   image: certbot/certbot
-  #   volumes:
-  #     - ./proxy/certbot/conf:/etc/letsencrypt
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    # entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+    - ./certbot/conf:/etc/letsencrypt
+    - ./certbot/www:/var/www/certbot
+    - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+    - ./nginx/newmantle.conf:/etc/nginx/conf.d/newmantle.conf
+    # command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"

@@ -20,15 +20,15 @@ services:
       - ./redis/conf/redis.conf:/usr/local/etc/redis/redis.conf:ro
     restart: always
     command: redis-server /usr/local/etc/redis/redis.conf
-  nginx:
-    image: nginx:latest
-    container_name: nginx
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./proxy/nginx/prod.conf:/etc/nginx/conf.d/prod.conf
-      - ./proxy/certbot/conf:/etc/letsencrypt
+  # nginx:
+  #   image: nginx:latest
+  #   container_name: nginx
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./proxy/nginx/prod.conf:/etc/nginx/conf.d/prod.conf
+  #     - ./proxy/certbot/conf:/etc/letsencrypt
     # depends_on:
     #   - certbot
   # certbot:

@@ -1,15 +1,13 @@
 import datetime
 
-from app.cores.config import Settings
 from app.cores.redis import RedisKeys, ANSWER_INDICATOR
 from app.features.game.repository import GameRepo
 import app.exceptions as exceptions
 
 
 class GameService:
-    def __init__(self, game_repo: GameRepo, configs: Settings):
+    def __init__(self, game_repo: GameRepo):
         self.repo = game_repo
-        self.configs = configs
 
     async def guess(self, date: datetime.date, word: str):
         scores_key = RedisKeys.from_date(date).scores_key

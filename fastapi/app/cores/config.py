@@ -3,7 +3,7 @@ from typing import List
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class Settings(BaseSettings):
+class Configs(BaseSettings):
     admin_id: str
     admin_pw: str
     max_rank: int
@@ -14,4 +14,4 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file='.env')
 
 
-settings = Settings()
+configs = Configs()

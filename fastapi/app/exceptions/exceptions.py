@@ -17,14 +17,14 @@ class InvalidParameter(BaseAppException):
     pass
 
 
-# class EntityDoesNotExist(BaseAppException):
-#     """database returns nothing"""
-#     pass
+class QuizNotFound(BaseAppException):
+    """no quiz data existed in Redis"""
+    pass
 
 
-# class EntityAlreadyExists(BaseAppException):
-#     """conflict detected, like trying to create a resource that already exists"""
-#     pass
+class InconsistentQuizData(BaseAppException):
+    """critical data integrity issue, likely caused by a previous partial write."""
+    pass
 
 
 # class InvalidEntity(BaseAppException):

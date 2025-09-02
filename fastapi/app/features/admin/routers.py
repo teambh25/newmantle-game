@@ -22,7 +22,7 @@ async def upsert_quiz(
         await admin_service.upsert_quiz(quiz)
     except exceptions.InvalidParameter as e:
         logger.error(str(e))
-        raise HTTPException(status_code=404, detail=e.msg)
+        raise HTTPException(status_code=400, detail=e.msg)
     logger.success(f"quiz created: {quiz.date}, {quiz.answer}")
     return {quiz.date: quiz.answer}
 
@@ -43,9 +43,14 @@ async def delete_answer(
     _: bool = Depends(authenticate_admin),
 ):  
     try:
-        deleted_cnt = await admin_service.delete_quiz(date)
+        await admin_service.delete_quiz(date)
     except exceptions.InvalidParameter as e:
         logger.error(str(e))
-        raise HTTPException(status_code=404, detail=e.msg)
+        raise HTTPException(status_code=400, detail=e.msg)
+    except exceptions.QuizNotFound as e:
+        logger.error(str(e))
+        raise HTTPException(status_code=400, detail=e.msg)
+    except exceptions.InconsistentQuizData as e:
+        logger.error(str(e))
+        raise HTTPException(status_code=500, detail=e.msg)
     logger.success(f"quiz deleted: {date}")
-    return {"details": f"{deleted_cnt} keys are deleted"}

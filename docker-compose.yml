@@ -9,6 +9,7 @@ services:
     volumes:
       - ./fastapi:/src
       - ./.env:/src/.env
+    command: ["--workers", "2"]
     depends_on:
       - redis 
   redis:

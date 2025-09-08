@@ -26,7 +26,10 @@ services:
     volumes:
       - ./certbot/conf:/etc/letsencrypt
       - ./certbot/www:/var/www/certbot
-    # entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+      - ./certbot/nginx-reload.sh:/nginx-reload.sh
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet --deploy-hook \"/nginx-reload.sh\"; sleep 24h; done'"
+    depends_on:
+      - nginx
   nginx:
     image: nginx:latest
     container_name: nginx
@@ -39,4 +42,3 @@ services:
     - ./certbot/www:/var/www/certbot
     - ./nginx/nginx.conf:/etc/nginx/nginx.conf
     - ./nginx/newmantle.conf:/etc/nginx/conf.d/newmantle.conf
-    # command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"

@@ -9,14 +9,17 @@ import app.exceptions as exceptions
 import app.features.admin.schemas as schemas
 from app.features.admin.service import AdminService
 
-admin_router = APIRouter(prefix="/admin", tags=["Admin"])
+admin_router = APIRouter(
+    prefix="/admin",
+    tags=["Admin"],
+    dependencies=[Depends(authenticate_admin)],
+)
 
 
 @admin_router.put("/quizzes", status_code=status.HTTP_200_OK)
 async def upsert_quiz(
     quiz: schemas.Quiz, 
     admin_service: AdminService = Depends(get_admin_service),
-    _: bool = Depends(authenticate_admin),
 ):
     try:
         await admin_service.upsert_quiz(quiz)
@@ -30,7 +33,6 @@ async def upsert_quiz(
 @admin_router.get("/quizzes/answers", status_code=status.HTTP_200_OK)
 async def read_all_answers(
     admin_service: AdminService = Depends(get_admin_service),
-    _: bool = Depends(authenticate_admin),
 ):
     answers = await admin_service.read_all_answers()
     return answers
@@ -40,7 +42,6 @@ async def read_all_answers(
 async def delete_answer(
     date: datetime.date,
     admin_service: AdminService = Depends(get_admin_service),
-    _: bool = Depends(authenticate_admin),
 ):  
     try:
         await admin_service.delete_quiz(date)

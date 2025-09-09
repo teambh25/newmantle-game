@@ -18,21 +18,13 @@ server {
 server {
 
     listen 443 ssl; 
-<<<<<<< HEAD
     server_name ${SERVER_URL};
-=======
-    server_name ${SERVER_URL}; #서브도메인을 입력
->>>>>>> origin/main
     ssl_certificate /etc/letsencrypt/live/${SERVER_URL}/fullchain.pem; 
     ssl_certificate_key /etc/letsencrypt/live/${SERVER_URL}/privkey.pem;
 
     location / {
         add_header X_DEBUG_MESSAGE "${SERVER_URL}";
-<<<<<<< HEAD
         proxy_pass http://fastapi:5000;
-=======
-        proxy_pass http://fastapi:5000; # 도커 내부의 포트로 보냄
->>>>>>> origin/main
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';

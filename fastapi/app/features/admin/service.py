@@ -31,10 +31,19 @@ class AdminService:
         self._validate_delete_date(date)
         redis_keys = RedisKeys.from_date(date)
         deleted_cnt = await self.repo.delete_quiz(redis_keys)
-        if deleted_cnt == 0:
-            raise exceptions.QuizNotFound("Quiz data not found for date")
-        elif deleted_cnt != len(fields(redis_keys)):
-            raise exceptions.InconsistentQuizData("Inconsistent quiz data detected, only {deleted_cnt} keys were found and deleted")
+        self._validate_deleted_cnt(deleted_cnt, redis_keys)
+
+    def _build_redis_quiz_data(self, quiz: schemas.Quiz):
+        scores_map, ranking_map = self._get_scores_ranking_maps(quiz)
+        expire_datetime = utils.get_day_after_tomorrow_1am(quiz.date)
+        redis_keys = RedisKeys.from_date(quiz.date)
+        return schemas.RedisQuizData(
+            keys=redis_keys,
+            answer_word=quiz.answer,
+            scores_map=scores_map,
+            ranking_map=ranking_map,
+            expire_at=expire_datetime,
+        )
     
     def _validate_quiz(self, quiz: schemas.Quiz):
         if quiz.date < self.today:
@@ -52,18 +61,12 @@ class AdminService:
         if date == self.today:
             raise exceptions.InvalidParameter("Can't delete today's quiz")
 
-    def _build_redis_quiz_data(self, quiz: schemas.Quiz):
-        scores_map, ranking_map = self._get_scores_ranking_maps(quiz)
-        expire_datetime = self._get_expire_datetime(quiz.date)
-        redis_keys = RedisKeys.from_date(quiz.date)
-        return schemas.RedisQuizData(
-            keys=redis_keys,
-            answer_word=quiz.answer,
-            scores_map=scores_map,
-            ranking_map=ranking_map,
-            expire_at=expire_datetime,
-        )
-
+    def _validate_deleted_cnt(self, deleted_cnt: int, redis_keys: RedisKeys):
+        if deleted_cnt == 0:
+            raise exceptions.QuizNotFound("Quiz data not found for date")
+        elif deleted_cnt != len(fields(redis_keys)):
+            raise exceptions.InconsistentQuizData("Inconsistent quiz data detected, only {deleted_cnt} keys were found and deleted")
+        
     def _get_scores_ranking_maps(self, quiz: schemas.Quiz):
         sorted_scores = sorted(quiz.scores.items(), key=lambda x: x[1], reverse=True)
         scores_map = {word: f"{score:.2f}|{self._clamp_rank(rank)}" for rank, (word, score) in enumerate(sorted_scores, start=1)}
@@ -71,9 +74,6 @@ class AdminService:
         ranking_map = {rank: f"{word}|{score:.2f}" for rank, (word, score) in enumerate(sorted_scores[:self.configs.max_rank], start=1)}
         ranking_map[0] = utils.extract_initial_consonant(quiz.answer)
         return scores_map, ranking_map
-
-    def _get_expire_datetime(self, quiz_date: datetime.date):
-        return datetime.datetime.combine(quiz_date + datetime.timedelta(days=1), datetime.time(hour=16, minute=0, second=0))  # two days later 1 am (KST, UTC+9)
     
     def _clamp_rank(self, rank: int):
         return rank if rank <= self.configs.max_rank else -1

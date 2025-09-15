@@ -72,12 +72,14 @@ async def test_upsert_quiz_success(mock_admin_service, mock_admin_repo, quiz_fac
     assert len(redis_data.scores_map) == 21    # 21 words + 1 answer
     assert redis_data.ranking_map[0] == "ㅈㄷ"  # Check initial consonant
     assert len(redis_data.ranking_map) == 11   # 1~10 ranks + rank 0(answer)
-    assert redis_data.expire_at == datetime.datetime(2025, 8, 30, 16, 0, 0)  # next 1am (UTC +9)
+    assert redis_data.expire_at == datetime.datetime(2025, 8, 31, 16, 0, 0)  # +2 days 1am (UTC +9)
 
 
 @pytest.mark.asyncio
-async def test_upsert_quiz_validation_fails_date_in_past(mock_admin_service, quiz_factory):
-    """Test that upsert_quiz raises an error if the quiz date is before today."""
+async def test_upsert_quiz_raises_with_past_date(mock_admin_service, quiz_factory):
+    """
+    Test that upsert_quiz raises an error if the quiz date is before today.
+    """
     past_date = TODAY - datetime.timedelta(days=1)
     invalid_quiz = quiz_factory(date=past_date)
     
@@ -86,8 +88,10 @@ async def test_upsert_quiz_validation_fails_date_in_past(mock_admin_service, qui
 
 
 @pytest.mark.asyncio
-async def test_upsert_quiz_validation_fails_answer_in_scores(mock_admin_service, quiz_factory):
-    """Test that upsert_quiz raises an error if the answer is in the scores dict."""
+async def test_upsert_quiz_raises_when_answer_in_scores(mock_admin_service, quiz_factory):
+    """
+    Test that upsert_quiz raises an error if the answer is in the scores dict.
+    """
     invalid_quiz = quiz_factory(scores_update={"정답": 100})
 
     with pytest.raises(exceptions.InvalidParameter, match="Answer is included in scores"):
@@ -95,8 +99,10 @@ async def test_upsert_quiz_validation_fails_answer_in_scores(mock_admin_service,
 
 
 @pytest.mark.asyncio
-async def test_upsert_quiz_validation_fails_not_enough_scores(mock_admin_service, quiz_factory):
-    """Test that upsert_quiz raises an error if there are not enough scores."""
+async def test_upsert_quiz_raises_with_short_scores(mock_admin_service, quiz_factory):
+    """
+    Test that upsert_quiz raises an error if there are not enough scores.
+    """
     invalid_quiz = quiz_factory(scores={"사과": 50, "배": 45, "바나나": 20})  # max_rank is 10, so we provide only 3 scores
     
     with pytest.raises(exceptions.InvalidParameter, match="The length of scores is less than max rank"):
@@ -104,16 +110,20 @@ async def test_upsert_quiz_validation_fails_not_enough_scores(mock_admin_service
 
 
 @pytest.mark.asyncio
-async def test_upsert_quiz_fails_answer_not_hangul(mock_admin_service, quiz_factory):
-    """Test error raising when the answer cannot be processed for an initial consonant hint."""    
+async def test_upsert_quiz_raises_when_answer_not_hangul(mock_admin_service, quiz_factory):
+    """
+    Test error raising when the answer cannot be processed for an non-hangul answer.
+    """ 
     invalid_quiz = quiz_factory(answer="English")  # Use a non-Hangul answer
     with pytest.raises(exceptions.InvalidParameter, match="Answer is not hangul"):
         await mock_admin_service.upsert_quiz(invalid_quiz)
 
 
 @pytest.mark.asyncio
-async def test_upsert_quiz_fails_scores_not_hangul(mock_admin_service, quiz_factory):
-    """Test error raising when the answer cannot be processed for an initial consonant hint."""    
+async def test_upsert_quiz_raises_when_scores_not_hangul(mock_admin_service, quiz_factory):
+    """
+    Test error raising when the answer cannot be processed for an non-hangul scores.
+    """ 
     invalid_quiz = quiz_factory(scores_update={"word": 100})  # Use a non-Hangul word in scores
     with pytest.raises(exceptions.InvalidParameter, match="The scores includes non-hangul word"):
         await mock_admin_service.upsert_quiz(invalid_quiz)
@@ -121,7 +131,9 @@ async def test_upsert_quiz_fails_scores_not_hangul(mock_admin_service, quiz_fact
 
 @pytest.mark.asyncio
 async def test_read_all_answers_success(mock_admin_service, mock_admin_repo):
-    """Test successfully fetching and transforming all answers."""
+    """
+    Test successfully fetching and transforming all answers.
+    """
     date1 = datetime.date(2025, 8, 20)
     date2 = datetime.date(2025, 8, 21)
     mock_keys = [f"quiz:{date1}:answers", f"quiz:{date2}:answers"]
@@ -140,7 +152,9 @@ async def test_read_all_answers_success(mock_admin_service, mock_admin_repo):
 
 @pytest.mark.asyncio
 async def test_delete_quiz_success(mock_admin_service, mock_admin_repo):
-    """Test the successful deletion of a quiz on a future date."""
+    """
+    Test the successful deletion of a quiz.
+    """
     valid_deleted_cnt = 3
     mock_admin_repo.delete_quiz.return_value = valid_deleted_cnt
 
@@ -153,16 +167,20 @@ async def test_delete_quiz_success(mock_admin_service, mock_admin_repo):
 
 
 @pytest.mark.asyncio
-async def test_delete_quiz_validation_fails_delete_date_today(mock_admin_service):
-    """Test that deleting today's quiz is not allowed."""
+async def test_delete_quiz_raises_with_today(mock_admin_service):
+    """
+    Test error raising when delete today's quiz.
+    """
     with pytest.raises(exceptions.InvalidParameter, match="Can't delete today's quiz"):
         await mock_admin_service.delete_quiz(TODAY)
 
 
 @pytest.mark.asyncio
-async def test_delete_quiz_fails_invalid_date(mock_admin_service, mock_admin_repo):
-    """Test that deleting today's quiz is not allowed."""
-    no_quiz_date = datetime.date(2300, 1, 30)
+async def test_delete_quiz_raises_with_no_quiz_date(mock_admin_service, mock_admin_repo):
+    """
+    Test error raising when there is no quiz for such date.
+    """
+    no_quiz_date = datetime.date(1900, 1, 30)
     no_quiz_deleted_cnt = 0
     mock_admin_repo.delete_quiz.return_value = no_quiz_deleted_cnt
     with pytest.raises(exceptions.QuizNotFound, match="Quiz data not found for date"):
@@ -170,8 +188,10 @@ async def test_delete_quiz_fails_invalid_date(mock_admin_service, mock_admin_rep
 
 
 @pytest.mark.asyncio
-async def test_delete_quiz_fails_inconsistent_data(mock_admin_service, mock_admin_repo):
-    """Test that deleting today's quiz is not allowed."""
+async def test_delete_quiz_raises_when_quiz_inconsistent(mock_admin_service, mock_admin_repo):
+    """
+    Test error raising when the there is inconsistency in quiz data.
+    """
     date = datetime.date(2025, 9, 30)  # any date
     inconsistent_quiz_deleted_cnt = 1  # 1 or 2
     mock_admin_repo.delete_quiz.return_value = inconsistent_quiz_deleted_cnt  # not deleted all key

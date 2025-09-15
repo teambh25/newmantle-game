@@ -12,6 +12,13 @@ def get_today_date():
     return datetime.datetime.now(ZoneInfo("Asia/Seoul")).date()
 
 
+def get_day_after_tomorrow_1am(date: datetime.date):
+    return datetime.datetime.combine(
+        date + datetime.timedelta(days=1),
+        datetime.time(hour=16, minute=0, second=0)
+    )  # two days later 1 am (KST, UTC+9)
+
+
 def get_initial_consonant_index(ch: str):
     return (ord(ch) - ord('가')) // (21 * 28)  # 한국어 유니코드 시작은 "가", 중성과 종성의 조합의 수 = 21 * 28
 

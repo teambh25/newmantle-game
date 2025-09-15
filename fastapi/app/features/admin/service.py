@@ -69,7 +69,7 @@ class AdminService:
         scores_map = {word: f"{score:.2f}|{self._clamp_rank(rank)}" for rank, (word, score) in enumerate(sorted_scores, start=1)}
         scores_map[quiz.answer] = ANSWER_INDICATOR
         ranking_map = {rank: f"{word}|{score:.2f}" for rank, (word, score) in enumerate(sorted_scores[:self.configs.max_rank], start=1)}
-        ranking_map[0] = utils.extract_initial_consonant(quiz.answer)
+        ranking_map[0] = quiz.answer
         return scores_map, ranking_map
 
     def _get_expire_datetime(self, quiz_date: datetime.date):

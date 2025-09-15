@@ -69,11 +69,11 @@ class AdminService:
         scores_map = {word: f"{score:.2f}|{self._clamp_rank(rank)}" for rank, (word, score) in enumerate(sorted_scores, start=1)}
         scores_map[quiz.answer] = ANSWER_INDICATOR
         ranking_map = {rank: f"{word}|{score:.2f}" for rank, (word, score) in enumerate(sorted_scores[:self.configs.max_rank], start=1)}
-        ranking_map[0] = quiz.answer
+        ranking_map[0] = utils.extract_initial_consonant(quiz.answer)
         return scores_map, ranking_map
 
     def _get_expire_datetime(self, quiz_date: datetime.date):
-        return datetime.datetime.combine(quiz_date, datetime.time(hour=16, minute=0, second=0))  # next day 1am(KST, UTC+9)
+        return datetime.datetime.combine(quiz_date + datetime.timedelta(days=1), datetime.time(hour=16, minute=0, second=0))  # two days later 1 am (KST, UTC+9)
     
     def _clamp_rank(self, rank: int):
         return rank if rank <= self.configs.max_rank else -1

@@ -38,3 +38,19 @@ async def hint(
         game_logger.info(e.msg)
         raise HTTPException(status_code=400, detail="Invalid hint request")
     return resp
+
+
+@game_router.get("/quizzes/{date}/recent-answer", status_code=status.HTTP_200_OK)
+async def recent_answer(
+    date: datetime.date,
+    game_service: GameService = Depends(get_game_service),
+):
+    try:
+        resp = await game_service.read_recent_answer(date)
+    except exceptions.InvalidParameter as e:
+        game_logger.info(e.msg)
+        raise HTTPException(status_code=400, detail="Invalid recent-answer request")
+    except exceptions.QuizNotFound as e:
+        game_logger.info(e.msg)
+        raise HTTPException(status_code=400, detail="Invalid recent-answer request")
+    return resp

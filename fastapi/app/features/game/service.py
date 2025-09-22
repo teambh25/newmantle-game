@@ -42,7 +42,7 @@ class GameService:
         answer_key = RedisKeys.from_date(date).answers_key
         answer = await self.repo.fetch_answer_by_date(answer_key)
         if answer is None:
-            raise exceptions.QuizNotFound(f"ans | date={date}")
+            raise exceptions.QuizNotFound(f"ans | quiz not found")
         return answer
     
     def _is_future_date(self, date: datetime.date):

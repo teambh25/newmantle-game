@@ -10,7 +10,7 @@ import app.utils as utils
 
 
 class AdminService:
-    def __init__(self, admin_repo: AdminRepo, configs: Configs, today: datetime.date = utils.get_today_date()):
+    def __init__(self, admin_repo: AdminRepo, configs: Configs, today: datetime.date):
         self.repo = admin_repo
         self.configs = configs
         self.today = today

@@ -7,7 +7,7 @@ import app.utils as utils
 
 
 class GameService:
-    def __init__(self, game_repo: GameRepo, today: datetime.date = utils.get_today_date()):
+    def __init__(self, game_repo: GameRepo, today: datetime.date):
         self.repo = game_repo
         self.today = today
 

@@ -7,9 +7,15 @@ from pydantic import BaseModel
 from app.cores.redis import RedisKeys
 
 
+class Answer(BaseModel):
+    word: str
+    tag: str
+    description: str
+
+
 class Quiz(BaseModel):
     date: datetime.date
-    answer: str
+    answer: str  # Answer
     scores: Dict[str, float]  # {word: similarity score}
 
 

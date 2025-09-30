@@ -2,7 +2,7 @@ import datetime
 
 import pytest
 
-import app.exceptions as exceptions
+import app.exceptions as exc
 from app.cores.redis import ANSWER_INDICATOR, RedisKeys
 from app.features.game.repository import GameRepo
 from app.features.game.service import GameService
@@ -88,7 +88,7 @@ async def test_guess_raises_with_invalid_word(
     invalid_word = "잘못된 단어"
     mock_game_repo.fetch_score_rank_by_word.return_value = None
 
-    with pytest.raises(exceptions.InvalidParameter):
+    with pytest.raises(exc.WordNotFound):
         await game_service.guess(test_date, invalid_word)
     mock_game_repo.fetch_score_rank_by_word.assert_called_once_with(
         expected_scores_key, invalid_word
@@ -143,7 +143,7 @@ async def test_hint_raises_with_invalid_rank(
     invalid_rank = -1
     mock_game_repo.fetch_word_score_by_rank.return_value = None
 
-    with pytest.raises(exceptions.InvalidParameter):
+    with pytest.raises(exc.RankNotFound):
         await game_service.hint(test_date, invalid_rank)
 
     mock_game_repo.fetch_word_score_by_rank.assert_called_once_with(
@@ -173,7 +173,7 @@ async def test_read_recent_answer_raises_with_future_date(game_service):
     Test the 'read_recent' method for a date that is after today.
     """
     future_date = TODAY + datetime.timedelta(days=1)
-    with pytest.raises(exceptions.InvalidParameter):
+    with pytest.raises(exc.DateNotAllowed):
         await game_service.read_recent_answer(future_date)
 
 
@@ -184,5 +184,5 @@ async def test_read_recent_answer_raises_if_no_answer(game_service, mock_game_re
     """
     no_ans_date = datetime.date(2000, 1, 30)
     mock_game_repo.fetch_answer_by_date.return_value = None
-    with pytest.raises(exceptions.QuizNotFound):
+    with pytest.raises(exc.QuizNotFound):
         await game_service.read_recent_answer(no_ans_date)

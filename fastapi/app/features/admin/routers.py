@@ -3,7 +3,7 @@ import datetime
 from fastapi import APIRouter, Depends, HTTPException, status
 from loguru import logger
 
-import app.exceptions as exceptions
+import app.exceptions as exc
 import app.features.admin.schemas as schemas
 from app.cores.auth import authenticate_admin
 from app.dependencies import get_admin_service
@@ -23,9 +23,9 @@ async def upsert_quiz(
 ):
     try:
         await admin_service.upsert_quiz(quiz)
-    except exceptions.InvalidParameter as e:
+    except exc.QuizValidationError as e:
         logger.error(str(e))
-        raise HTTPException(status_code=400, detail=e.msg)
+        raise HTTPException(status_code=422, detail=e.msg)
     logger.success(f"quiz created: {quiz.date}, {quiz.answer}")
     return {quiz.date: quiz.answer}
 
@@ -45,13 +45,13 @@ async def delete_answer(
 ):
     try:
         await admin_service.delete_quiz(date)
-    except exceptions.InvalidParameter as e:
+    except exc.DateNotAllowed as e:
         logger.error(str(e))
-        raise HTTPException(status_code=400, detail=e.msg)
-    except exceptions.QuizNotFound as e:
+        raise HTTPException(status_code=422, detail=e.msg)
+    except exc.QuizNotFound as e:
         logger.error(str(e))
-        raise HTTPException(status_code=400, detail=e.msg)
-    except exceptions.InconsistentQuizData as e:
+        raise HTTPException(status_code=404, detail=e.msg)
+    except exc.QuizInconsistentError as e:
         logger.error(str(e))
         raise HTTPException(status_code=500, detail=e.msg)
     logger.success(f"quiz deleted: {date}")

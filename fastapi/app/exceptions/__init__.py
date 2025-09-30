@@ -1,16 +1,22 @@
 from .exceptions import (
     AuthenticationFailed,
-    InconsistentQuizData,
-    InvalidParameter,
+    DateNotAllowed,
+    QuizInconsistentError,
     QuizNotFound,
+    QuizValidationError,
+    RankNotFound,
+    WordNotFound,
 )
 from .handlers import authentication_exception_handler, global_exception_handler
 
 __all__ = [
     "AuthenticationFailed",
-    "InvalidParameter",
     "QuizNotFound",
-    "InconsistentQuizData",
     "authentication_exception_handler",
     "global_exception_handler",
+    "QuizValidationError",
+    "QuizInconsistentError",
+    "WordNotFound",
+    "RankNotFound",
+    "DateNotAllowed",
 ]

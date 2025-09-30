@@ -1,6 +1,6 @@
 import datetime
 
-import app.exceptions as exceptions
+import app.exceptions as exc
 from app.cores.redis import ANSWER_INDICATOR, RedisKeys
 from app.features.game.repository import GameRepo
 
@@ -14,7 +14,7 @@ class GameService:
         scores_key = RedisKeys.from_date(date).scores_key
         score_rank = await self.repo.fetch_score_rank_by_word(scores_key, word)
         if score_rank is None:
-            raise exceptions.InvalidParameter(f"guess | date={date}, word={word}")
+            raise exc.WordNotFound(f"guess | date={date}, word={word}")
         if score_rank == ANSWER_INDICATOR:
             resp = {"correct": True, "score": None, "rank": None}
         else:
@@ -26,7 +26,7 @@ class GameService:
         ranking_key = RedisKeys.from_date(date).ranking_key
         word_score = await self.repo.fetch_word_score_by_rank(ranking_key, rank)
         if word_score is None:
-            raise exceptions.InvalidParameter(f"hint | date={date}, rank={rank}")
+            raise exc.RankNotFound(f"hint | date={date}, rank={rank}")
         if rank == 0:
             initial_consonant = word_score
             resp = {"hint": initial_consonant, "score": None}
@@ -37,11 +37,11 @@ class GameService:
 
     async def read_recent_answer(self, date: datetime.date):
         if self._is_future_date(date):
-            raise exceptions.InvalidParameter(f"ans | date={date}")
+            raise exc.DateNotAllowed(f"ans | date={date}")
         answer_key = RedisKeys.from_date(date).answers_key
         answer = await self.repo.fetch_answer_by_date(answer_key)
         if answer is None:
-            raise exceptions.QuizNotFound("ans | quiz not found")
+            raise exc.QuizNotFound("ans | quiz not found")
         return answer
 
     def _is_future_date(self, date: datetime.date):

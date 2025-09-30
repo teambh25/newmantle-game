@@ -13,19 +13,38 @@ class AuthenticationFailed(BaseAppException):
     pass
 
 
-class InvalidParameter(BaseAppException):
-    """raised when an parameter violates a defined business/domain rule"""
-
-    pass
-
-
 class QuizNotFound(BaseAppException):
-    """no quiz data existed in Redis"""
+    """Raised when the requested quiz data does not exist in Redis."""
 
     pass
 
 
-class InconsistentQuizData(BaseAppException):
-    """critical data integrity issue, likely caused by a previous partial write."""
+class QuizValidationError(BaseAppException):
+    """Raised when the quiz data fails domain-specific validation rules."""
+
+    pass
+
+
+class QuizInconsistentError(BaseAppException):
+    """Raised when the quiz data is inconsistent."""
+
+    pass
+
+
+class WordNotFound(BaseAppException):
+    """Raised when the guessed word does not exist in the current quiz context."""
+
+    pass
+
+
+class RankNotFound(BaseAppException):
+    """Raised when the rank associated with a score cannot be found."""
+
+    pass
+
+
+class DateNotAllowed(BaseAppException):
+    """Raised when the requested date is not allowed for the operation,
+    such as querying future answers or restricted historical data."""
 
     pass

@@ -16,6 +16,6 @@ sudo docker-compose up -d
 
 - Test / flake8
 ```
-sudo docker-compose run --rm --entrypoint "" fastapi python -m pytest
-sudo docker-compose run  --rm --entrypoint "" fastapi flake8 --show-source
+docker-compose run --rm --entrypoint "" fastapi python -m pytest
+docker-compose run  --rm --entrypoint "" fastapi flake8 --show-source
 ```

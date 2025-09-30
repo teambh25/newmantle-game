@@ -1,11 +1,11 @@
 import datetime
 
-from fastapi import Depends, APIRouter, HTTPException, status, Path
+from fastapi import APIRouter, Depends, HTTPException, Path, status
 from loguru import logger
 
-from app.dependencies import get_game_service
-from app.cores.config import configs
 import app.exceptions as exceptions
+from app.cores.config import configs
+from app.dependencies import get_game_service
 from app.features.game.service import GameService
 
 game_router = APIRouter(tags=["Game"])

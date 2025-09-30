@@ -5,7 +5,7 @@ def setup_logging():
     logger.remove()  # Remove default console handler
     logger.add(
         "./logs/app.log",
-        rotation="1 week",  
+        rotation="1 week",
         retention="1 month",
         encoding="utf-8",
         format="{time:YYYY-MM-DD HH:mm:ss!UTC} | {level} | {message}",

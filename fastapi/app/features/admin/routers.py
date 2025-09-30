@@ -1,12 +1,12 @@
 import datetime
 
-from fastapi import Depends, APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from loguru import logger
 
-from app.cores.auth import authenticate_admin
-from app.dependencies import get_admin_service
 import app.exceptions as exceptions
 import app.features.admin.schemas as schemas
+from app.cores.auth import authenticate_admin
+from app.dependencies import get_admin_service
 from app.features.admin.service import AdminService
 
 admin_router = APIRouter(
@@ -18,7 +18,7 @@ admin_router = APIRouter(
 
 @admin_router.put("/quizzes", status_code=status.HTTP_200_OK)
 async def upsert_quiz(
-    quiz: schemas.Quiz, 
+    quiz: schemas.Quiz,
     admin_service: AdminService = Depends(get_admin_service),
 ):
     try:
@@ -38,11 +38,11 @@ async def read_all_answers(
     return answers
 
 
-@admin_router.delete('/quizzes/{date}', status_code=status.HTTP_200_OK)
+@admin_router.delete("/quizzes/{date}", status_code=status.HTTP_200_OK)
 async def delete_answer(
     date: datetime.date,
     admin_service: AdminService = Depends(get_admin_service),
-):  
+):
     try:
         await admin_service.delete_quiz(date)
     except exceptions.InvalidParameter as e:

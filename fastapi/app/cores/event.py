@@ -3,8 +3,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app.cores.config import configs
-from app.cores.redis import create_redis_pool
 from app.cores.logging import setup_logging
+from app.cores.redis import create_redis_pool
 
 
 @asynccontextmanager

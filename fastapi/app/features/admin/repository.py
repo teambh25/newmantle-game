@@ -1,6 +1,6 @@
 import redis.asyncio as redis
 
-import app.features.admin.schemas as schemas 
+import app.features.admin.schemas as schemas
 from app.cores.redis import RedisKeys
 
 
@@ -21,7 +21,9 @@ class AdminRepo:
         answer_keys = await self.rd.keys("*answers")
         answer_words = await self.rd.mget(answer_keys)
         return answer_keys, answer_words
-    
+
     async def delete_quiz(self, keys: RedisKeys):
-        deleted_cnt = await self.rd.delete(keys.answers_key, keys.scores_key, keys.ranking_key)
+        deleted_cnt = await self.rd.delete(
+            keys.answers_key, keys.scores_key, keys.ranking_key
+        )
         return deleted_cnt

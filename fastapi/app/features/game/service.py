@@ -1,8 +1,8 @@
 import datetime
 
-from app.cores.redis import RedisKeys, ANSWER_INDICATOR
-from app.features.game.repository import GameRepo
 import app.exceptions as exceptions
+from app.cores.redis import ANSWER_INDICATOR, RedisKeys
+from app.features.game.repository import GameRepo
 
 
 class GameService:
@@ -21,7 +21,7 @@ class GameService:
             score, rank = self._extract_score_and_rank(score_rank)
             resp = {"correct": False, "score": score, "rank": rank}
         return resp
-    
+
     async def hint(self, date: datetime.date, rank: int):
         ranking_key = RedisKeys.from_date(date).ranking_key
         word_score = await self.repo.fetch_word_score_by_rank(ranking_key, rank)
@@ -34,7 +34,7 @@ class GameService:
             word, score = self._extract_word_and_score(word_score)
             resp = {"hint": word, "score": score}
         return resp
-    
+
     async def read_recent_answer(self, date: datetime.date):
         if self._is_future_date(date):
             raise exceptions.InvalidParameter(f"ans | date={date}")
@@ -43,7 +43,7 @@ class GameService:
         if answer is None:
             raise exceptions.QuizNotFound("ans | quiz not found")
         return answer
-    
+
     def _is_future_date(self, date: datetime.date):
         return date > self.today
 
@@ -51,7 +51,7 @@ class GameService:
     def _extract_score_and_rank(score_rank: str):
         score, rank = score_rank.split("|")
         return float(score), int(rank)
-    
+
     @staticmethod
     def _extract_word_and_score(word_score: str):
         word, score = word_score.split("|")

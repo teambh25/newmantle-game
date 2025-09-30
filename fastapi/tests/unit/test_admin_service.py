@@ -2,12 +2,12 @@ import datetime
 
 import pytest
 
+import app.exceptions as exceptions
+import app.features.admin.schemas as schemas
 from app.cores.config import Configs
 from app.cores.redis import ANSWER_INDICATOR
-import app.exceptions as exceptions
-from app.features.admin.service import AdminService
-import app.features.admin.schemas as schemas
 from app.features.admin.repository import AdminRepo
+from app.features.admin.service import AdminService
 
 TODAY = datetime.date(2025, 8, 29)
 TOMORROW = datetime.date(2025, 8, 30)
@@ -39,10 +39,30 @@ def quiz_factory():
     def _create_quiz(scores_update=None, **kwargs):
         answer = "정답"
         korean_20_words = [
-            "집", "학교", "책", "밥", "물", "차", "번개", "길", "손", "눈",
-            "코", "입", "귀", "발", "버스", "자전거", "기차", "강", "산", "바다",
+            "집",
+            "학교",
+            "책",
+            "밥",
+            "물",
+            "차",
+            "번개",
+            "길",
+            "손",
+            "눈",
+            "코",
+            "입",
+            "귀",
+            "발",
+            "버스",
+            "자전거",
+            "기차",
+            "강",
+            "산",
+            "바다",
         ]
-        scores = {word: 100.0 - 0.5 * i for i, word in enumerate(korean_20_words, start=1)}
+        scores = {
+            word: 100.0 - 0.5 * i for i, word in enumerate(korean_20_words, start=1)
+        }
         if scores_update:
             scores.update(scores_update)
         quiz_data = {
@@ -52,6 +72,7 @@ def quiz_factory():
         }
         quiz_data.update(kwargs)
         return schemas.Quiz(**quiz_data)
+
     return _create_quiz
 
 
@@ -69,10 +90,12 @@ async def test_upsert_quiz_success(mock_admin_service, mock_admin_repo, quiz_fac
     assert isinstance(redis_data, schemas.RedisQuizData)
     assert redis_data.answer_word == "정답"
     assert redis_data.scores_map["정답"] == ANSWER_INDICATOR
-    assert len(redis_data.scores_map) == 21    # 21 words + 1 answer
+    assert len(redis_data.scores_map) == 21  # 21 words + 1 answer
     assert redis_data.ranking_map[0] == "ㅈㄷ"  # Check initial consonant
-    assert len(redis_data.ranking_map) == 11   # 1~10 ranks + rank 0(answer)
-    assert redis_data.expire_at == datetime.datetime(2025, 8, 31, 16, 0, 0)  # +2 days 1am (UTC +9)
+    assert len(redis_data.ranking_map) == 11  # 1~10 ranks + rank 0(answer)
+    assert redis_data.expire_at == datetime.datetime(
+        2025, 8, 31, 16, 0, 0
+    )  # +2 days 1am (UTC +9)
 
 
 @pytest.mark.asyncio
@@ -82,19 +105,25 @@ async def test_upsert_quiz_raises_with_past_date(mock_admin_service, quiz_factor
     """
     past_date = TODAY - datetime.timedelta(days=1)
     invalid_quiz = quiz_factory(date=past_date)
-    
-    with pytest.raises(exceptions.InvalidParameter, match="Quiz date cannot be before today"):
+
+    with pytest.raises(
+        exceptions.InvalidParameter, match="Quiz date cannot be before today"
+    ):
         await mock_admin_service.upsert_quiz(invalid_quiz)
 
 
 @pytest.mark.asyncio
-async def test_upsert_quiz_raises_when_answer_in_scores(mock_admin_service, quiz_factory):
+async def test_upsert_quiz_raises_when_answer_in_scores(
+    mock_admin_service, quiz_factory
+):
     """
     Test that upsert_quiz raises an error if the answer is in the scores dict.
     """
     invalid_quiz = quiz_factory(scores_update={"정답": 100})
 
-    with pytest.raises(exceptions.InvalidParameter, match="Answer is included in scores"):
+    with pytest.raises(
+        exceptions.InvalidParameter, match="Answer is included in scores"
+    ):
         await mock_admin_service.upsert_quiz(invalid_quiz)
 
 
@@ -103,29 +132,41 @@ async def test_upsert_quiz_raises_with_short_scores(mock_admin_service, quiz_fac
     """
     Test that upsert_quiz raises an error if there are not enough scores.
     """
-    invalid_quiz = quiz_factory(scores={"사과": 50, "배": 45, "바나나": 20})  # max_rank is 10, so we provide only 3 scores
-    
-    with pytest.raises(exceptions.InvalidParameter, match="The length of scores is less than max rank"):
+    invalid_quiz = quiz_factory(
+        scores={"사과": 50, "배": 45, "바나나": 20}
+    )  # max_rank is 10, so we provide only 3 scores
+
+    with pytest.raises(
+        exceptions.InvalidParameter, match="The length of scores is less than max rank"
+    ):
         await mock_admin_service.upsert_quiz(invalid_quiz)
 
 
 @pytest.mark.asyncio
-async def test_upsert_quiz_raises_when_answer_not_hangul(mock_admin_service, quiz_factory):
+async def test_upsert_quiz_raises_when_answer_not_hangul(
+    mock_admin_service, quiz_factory
+):
     """
     Test error raising when the answer cannot be processed for an non-hangul answer.
-    """ 
+    """
     invalid_quiz = quiz_factory(answer="English")  # Use a non-Hangul answer
     with pytest.raises(exceptions.InvalidParameter, match="Answer is not hangul"):
         await mock_admin_service.upsert_quiz(invalid_quiz)
 
 
 @pytest.mark.asyncio
-async def test_upsert_quiz_raises_when_scores_not_hangul(mock_admin_service, quiz_factory):
+async def test_upsert_quiz_raises_when_scores_not_hangul(
+    mock_admin_service, quiz_factory
+):
     """
     Test error raising when the answer cannot be processed for an non-hangul scores.
-    """ 
-    invalid_quiz = quiz_factory(scores_update={"word": 100})  # Use a non-Hangul word in scores
-    with pytest.raises(exceptions.InvalidParameter, match="The scores includes non-hangul word"):
+    """
+    invalid_quiz = quiz_factory(
+        scores_update={"word": 100}
+    )  # Use a non-Hangul word in scores
+    with pytest.raises(
+        exceptions.InvalidParameter, match="The scores includes non-hangul word"
+    ):
         await mock_admin_service.upsert_quiz(invalid_quiz)
 
 
@@ -143,10 +184,7 @@ async def test_read_all_answers_success(mock_admin_service, mock_admin_repo):
     result = await mock_admin_service.read_all_answers()
 
     mock_admin_repo.fetch_all_answers.assert_called_once()
-    expected_result = {
-        date1: "첫번째답",
-        date2: "두번째답"
-    }
+    expected_result = {date1: "첫번째답", date2: "두번째답"}
     assert result == expected_result
 
 
@@ -176,7 +214,9 @@ async def test_delete_quiz_raises_with_today(mock_admin_service):
 
 
 @pytest.mark.asyncio
-async def test_delete_quiz_raises_with_no_quiz_date(mock_admin_service, mock_admin_repo):
+async def test_delete_quiz_raises_with_no_quiz_date(
+    mock_admin_service, mock_admin_repo
+):
     """
     Test error raising when there is no quiz for such date.
     """
@@ -188,12 +228,16 @@ async def test_delete_quiz_raises_with_no_quiz_date(mock_admin_service, mock_adm
 
 
 @pytest.mark.asyncio
-async def test_delete_quiz_raises_when_quiz_inconsistent(mock_admin_service, mock_admin_repo):
+async def test_delete_quiz_raises_when_quiz_inconsistent(
+    mock_admin_service, mock_admin_repo
+):
     """
     Test error raising when the there is inconsistency in quiz data.
     """
     date = datetime.date(2025, 9, 30)  # any date
     inconsistent_quiz_deleted_cnt = 1  # 1 or 2
-    mock_admin_repo.delete_quiz.return_value = inconsistent_quiz_deleted_cnt  # not deleted all key
+    mock_admin_repo.delete_quiz.return_value = (
+        inconsistent_quiz_deleted_cnt  # not deleted all key
+    )
     with pytest.raises(exceptions.InconsistentQuizData):
         await mock_admin_service.delete_quiz(date)

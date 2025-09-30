@@ -1,5 +1,5 @@
-from fastapi import Request, Depends
 import redis.asyncio as redis
+from fastapi import Depends, Request
 
 
 def get_redis_pool(req: Request):

@@ -1,5 +1,5 @@
-from dataclasses import dataclass
 import datetime
+from dataclasses import dataclass
 
 import redis.asyncio as redis
 
@@ -11,7 +11,7 @@ def create_redis_pool(url: str, max_connection: int):
         url,
         max_connections=max_connection,
         decode_responses=True,
-        socket_connect_timeout=2,  
+        socket_connect_timeout=2,
         socket_timeout=2,
         # socket_keepalive=True,
     )
@@ -31,9 +31,8 @@ class RedisKeys:
             scores_key=f"quiz:{date}:scores",
             ranking_key=f"quiz:{date}:ranking",
         )
-    
+
     @staticmethod
     def extract_date_from_key(key: str):
         date = key.split(":")[1]
         return datetime.datetime.strptime(date, "%Y-%m-%d").date()
-    

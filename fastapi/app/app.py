@@ -1,22 +1,22 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.cores.event import lifespan
-from app.cores.config import configs
+import app.exceptions as exceptions
 from app.cores.api_docs import docs_router
+from app.cores.config import configs
+from app.cores.event import lifespan
 from app.features.admin.routers import admin_router
 from app.features.game.routers import game_router
-import app.exceptions as exceptions
 
 
 def create_app() -> FastAPI:
     app = FastAPI(
         lifespan=lifespan,  # setup log and redis pool
-        docs_url=None,      # disable default docs
-        redoc_url=None, 
+        docs_url=None,  # disable default docs
+        redoc_url=None,
         openapi_url="/openapi.json",
     )
-    
+
     # add routers
     app.include_router(docs_router)
     app.include_router(admin_router)
@@ -39,5 +39,5 @@ def create_app() -> FastAPI:
     }
     for exc, handler in EXCEPTION_HANDLERS.items():
         app.add_exception_handler(exc, handler)
-    
+
     return app

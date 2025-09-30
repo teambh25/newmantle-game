@@ -2,10 +2,10 @@ import datetime
 
 import pytest
 
-from app.cores.redis import RedisKeys, ANSWER_INDICATOR
 import app.exceptions as exceptions
-from app.features.game.service import GameService
+from app.cores.redis import ANSWER_INDICATOR, RedisKeys
 from app.features.game.repository import GameRepo
+from app.features.game.service import GameService
 
 TODAY = datetime.date(2025, 8, 29)
 
@@ -42,21 +42,27 @@ def expected_ranking_key(test_date):
 
 
 @pytest.mark.asyncio
-async def test_guess_sucess_with_answer(game_service, mock_game_repo, test_date, expected_scores_key):
+async def test_guess_sucess_with_answer(
+    game_service, mock_game_repo, test_date, expected_scores_key
+):
     """
     Test the 'guess' method for a answer word.
     """
     answer = "정답"
     mock_game_repo.fetch_score_rank_by_word.return_value = ANSWER_INDICATOR
-    
+
     result = await game_service.guess(test_date, answer)
 
-    mock_game_repo.fetch_score_rank_by_word.assert_called_once_with(expected_scores_key, answer)
+    mock_game_repo.fetch_score_rank_by_word.assert_called_once_with(
+        expected_scores_key, answer
+    )
     assert result == {"correct": True, "score": None, "rank": None}
 
 
 @pytest.mark.asyncio
-async def test_guess_sucess_with_non_answer(game_service, mock_game_repo, test_date, expected_scores_key):
+async def test_guess_sucess_with_non_answer(
+    game_service, mock_game_repo, test_date, expected_scores_key
+):
     """
     Test the 'guess' method for a non answer word.
     """
@@ -66,12 +72,16 @@ async def test_guess_sucess_with_non_answer(game_service, mock_game_repo, test_d
 
     result = await game_service.guess(test_date, non_answer)
 
-    mock_game_repo.fetch_score_rank_by_word.assert_called_once_with(expected_scores_key, non_answer)
+    mock_game_repo.fetch_score_rank_by_word.assert_called_once_with(
+        expected_scores_key, non_answer
+    )
     assert result == {"correct": False, "score": 95.5, "rank": 120}
 
 
 @pytest.mark.asyncio
-async def test_guess_raises_with_invalid_word(game_service, mock_game_repo, test_date, expected_scores_key):
+async def test_guess_raises_with_invalid_word(
+    game_service, mock_game_repo, test_date, expected_scores_key
+):
     """
     Test the 'guess' method when the word is invalid (repo returns None).
     """
@@ -80,11 +90,15 @@ async def test_guess_raises_with_invalid_word(game_service, mock_game_repo, test
 
     with pytest.raises(exceptions.InvalidParameter):
         await game_service.guess(test_date, invalid_word)
-    mock_game_repo.fetch_score_rank_by_word.assert_called_once_with(expected_scores_key, invalid_word)
+    mock_game_repo.fetch_score_rank_by_word.assert_called_once_with(
+        expected_scores_key, invalid_word
+    )
 
 
 @pytest.mark.asyncio
-async def test_hint_return_initial_consonant(game_service, mock_game_repo, test_date, expected_ranking_key):
+async def test_hint_return_initial_consonant(
+    game_service, mock_game_repo, test_date, expected_ranking_key
+):
     """
     Test the 'hint' method for rank 0, which should return the initial consonant.
     """
@@ -94,12 +108,16 @@ async def test_hint_return_initial_consonant(game_service, mock_game_repo, test_
 
     result = await game_service.hint(test_date, rank)
 
-    mock_game_repo.fetch_word_score_by_rank.assert_called_once_with(expected_ranking_key, rank)
+    mock_game_repo.fetch_word_score_by_rank.assert_called_once_with(
+        expected_ranking_key, rank
+    )
     assert result == {"hint": initial_consonant, "score": None}
 
 
 @pytest.mark.asyncio
-async def test_hint_return_word(game_service, mock_game_repo, test_date, expected_ranking_key):
+async def test_hint_return_word(
+    game_service, mock_game_repo, test_date, expected_ranking_key
+):
     """
     Test the 'hint' method for a valid rank > 0, which should return a word and score.
     """
@@ -109,12 +127,16 @@ async def test_hint_return_word(game_service, mock_game_repo, test_date, expecte
 
     result = await game_service.hint(test_date, rank)
 
-    mock_game_repo.fetch_word_score_by_rank.assert_called_once_with(expected_ranking_key, rank)
+    mock_game_repo.fetch_word_score_by_rank.assert_called_once_with(
+        expected_ranking_key, rank
+    )
     assert result == {"hint": "사과", "score": 98.7}
 
 
 @pytest.mark.asyncio
-async def test_hint_raises_with_invalid_rank(game_service, mock_game_repo, test_date, expected_ranking_key):
+async def test_hint_raises_with_invalid_rank(
+    game_service, mock_game_repo, test_date, expected_ranking_key
+):
     """
     Test the 'hint' method for a rank that does not exist in the repo.
     """
@@ -124,11 +146,15 @@ async def test_hint_raises_with_invalid_rank(game_service, mock_game_repo, test_
     with pytest.raises(exceptions.InvalidParameter):
         await game_service.hint(test_date, invalid_rank)
 
-    mock_game_repo.fetch_word_score_by_rank.assert_called_once_with(expected_ranking_key, invalid_rank)
+    mock_game_repo.fetch_word_score_by_rank.assert_called_once_with(
+        expected_ranking_key, invalid_rank
+    )
 
 
 @pytest.mark.asyncio
-async def test_read_recent_answer_sucess_with_today(game_service, mock_game_repo, expected_answers_key):
+async def test_read_recent_answer_sucess_with_today(
+    game_service, mock_game_repo, expected_answers_key
+):
     """
     Test the 'read_recent' method for a date that is today.
     """
@@ -136,7 +162,7 @@ async def test_read_recent_answer_sucess_with_today(game_service, mock_game_repo
     mock_game_repo.fetch_answer_by_date.return_value = ANSWER
 
     result = await game_service.read_recent_answer(TODAY)
-    
+
     mock_game_repo.fetch_answer_by_date.assert_called_once_with(expected_answers_key)
     assert result == ANSWER
 

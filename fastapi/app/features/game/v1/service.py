@@ -1,11 +1,12 @@
 import datetime
 
 import app.exceptions as exc
-from app.cores.redis import ANSWER_INDICATOR, RedisKeys
+from app.cores.redis import ANSWER_INDICATOR, DELIMITER, RedisKeys
 from app.features.game.repository import GameRepo
+from app.features.game.v1.adpter import V1Adapter
 
 
-class GameService:
+class GameServiceV1:
     def __init__(self, game_repo: GameRepo, today: datetime.date):
         self.repo = game_repo
         self.today = today
@@ -39,7 +40,10 @@ class GameService:
         if self._is_future_date(date):
             raise exc.DateNotAllowed(f"ans | date={date}")
         answer_key = RedisKeys.from_date(date).answers_key
-        answer = await self.repo.fetch_answer_by_date(answer_key)
+        answer = V1Adapter.answer_to_v1(
+            await self.repo.fetch_answer_by_date(answer_key)
+        )
+
         if answer is None:
             raise exc.QuizNotFound("ans | quiz not found")
         return answer
@@ -49,10 +53,10 @@ class GameService:
 
     @staticmethod
     def _extract_score_and_rank(score_rank: str):
-        score, rank = score_rank.split("|")
+        score, rank = score_rank.split(DELIMITER)
         return float(score), int(rank)
 
     @staticmethod
     def _extract_word_and_score(word_score: str):
-        word, score = word_score.split("|")
+        word, score = word_score.split(DELIMITER)
         return word, float(score)

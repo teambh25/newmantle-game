@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from loguru import logger
 
 import app.exceptions as exc
-import app.features.admin.schemas as schemas
+import app.schemas as schemas
 from app.cores.auth import authenticate_admin
 from app.dependencies import get_admin_service
 from app.features.admin.service import AdminService

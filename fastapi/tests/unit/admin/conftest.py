@@ -2,7 +2,7 @@ import datetime
 
 import pytest
 
-import app.features.admin.schemas as schemas
+import app.schemas as schemas
 
 
 @pytest.fixture
@@ -33,7 +33,7 @@ def quiz_factory(tomorrow):
         """
 
         # set default value
-        answer = "정답"
+        answer = {"word": "정답", "tag": "랜덤", "description": "정답입니다."}
         korean_words = ["사과", "배", "바나나"]
         scores = {word: 100.0 - 5.0 * i for i, word in enumerate(korean_words, start=1)}
         quiz_data = {
@@ -43,7 +43,13 @@ def quiz_factory(tomorrow):
         }
 
         # override
+        if "answer" in kwargs:
+            quiz_data["answer"].update(kwargs["answer"])
+            del kwargs["answer"]
         quiz_data.update(kwargs)
+        quiz_data["answer"] = schemas.Answer(
+            **quiz_data["answer"]
+        )  # answer should dict
         return schemas.Quiz(**quiz_data)
 
     return _create_quiz

@@ -6,7 +6,8 @@ from app.cores.api_docs import docs_router
 from app.cores.config import configs
 from app.cores.event import lifespan
 from app.features.admin.routers import admin_router
-from app.features.game.routers import game_router
+from app.features.game.v1.routers import game_router_v1
+from app.features.game.v2.routers import game_router_v2
 
 
 def create_app() -> FastAPI:
@@ -20,7 +21,8 @@ def create_app() -> FastAPI:
     # add routers
     app.include_router(docs_router)
     app.include_router(admin_router)
-    app.include_router(game_router)
+    app.include_router(game_router_v1)
+    app.include_router(game_router_v2)
 
     # add CORS midleware
     app.add_middleware(

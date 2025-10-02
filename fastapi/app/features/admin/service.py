@@ -1,7 +1,7 @@
 import datetime
 from dataclasses import fields
 
-import app.features.admin.schemas as schemas
+import app.schemas as schemas
 from app.cores.redis import RedisKeys
 from app.features.admin.quiz_builder import QuizBuilder
 from app.features.admin.repository import AdminRepo
@@ -22,10 +22,12 @@ class AdminService:
         await self.repo.upsert_quiz(rd_quiz)
 
     async def read_all_answers(self):
-        answer_keys, answer_words = await self.repo.fetch_all_answers()
+        answer_keys, answers = await self.repo.fetch_all_answers()
         return {
-            RedisKeys.extract_date_from_key(answer_key): answer_word
-            for answer_key, answer_word in zip(answer_keys, answer_words)
+            RedisKeys.extract_date_from_key(key): schemas.Answer.model_validate_json(
+                ans
+            )
+            for key, ans in zip(answer_keys, answers)
         }
 
     async def delete_quiz(self, date: datetime.date):

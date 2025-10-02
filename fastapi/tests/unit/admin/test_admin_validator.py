@@ -41,7 +41,7 @@ def test_validate_quiz_raises_when_answer_not_hangul(mock_validator, quiz_factor
     """
     Should raise if the answer is not Hangul.
     """
-    invalid_quiz = quiz_factory(answer="Answer")  # Use a non-Hangul answer
+    invalid_quiz = quiz_factory(answer={"word": "Answer"})  # Use a non-Hangul answer
 
     with pytest.raises(exc.QuizValidationError, match="Answer is not hangul"):
         mock_validator.validate_quiz(invalid_quiz)
@@ -52,7 +52,8 @@ def test_validate_quiz_raises_when_answer_in_scores(mock_validator, quiz_factory
     Should raise if the answer appears in scores.
     """
     invalid_quiz = quiz_factory(
-        answer="정답", scores={"정답": 100, "사과": 95, "배": 90, "바나나": 85}
+        answer={"word": "정답"},
+        scores={"정답": 100, "사과": 95, "배": 90, "바나나": 85},
     )
 
     with pytest.raises(exc.QuizValidationError, match="Answer is included in scores"):

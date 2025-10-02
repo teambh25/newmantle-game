@@ -5,7 +5,7 @@ import pytest
 import app.exceptions as exc
 from app.cores.redis import ANSWER_INDICATOR, RedisKeys
 from app.features.game.repository import GameRepo
-from app.features.game.service import GameService
+from app.features.game.v1.service import GameServiceV1
 
 TODAY = datetime.date(2025, 8, 29)
 
@@ -18,7 +18,7 @@ def mock_game_repo(mocker):
 
 @pytest.fixture
 def game_service(mock_game_repo):
-    return GameService(mock_game_repo, TODAY)
+    return GameServiceV1(mock_game_repo, TODAY)
 
 
 @pytest.fixture
@@ -158,13 +158,13 @@ async def test_read_recent_answer_sucess_with_today(
     """
     Test the 'read_recent' method for a date that is today.
     """
-    ANSWER = "정답"
+    ANSWER = '{"word":"정답","tag":"랜덤","description":"정답입니다."}'
     mock_game_repo.fetch_answer_by_date.return_value = ANSWER
 
     result = await game_service.read_recent_answer(TODAY)
 
     mock_game_repo.fetch_answer_by_date.assert_called_once_with(expected_answers_key)
-    assert result == ANSWER
+    assert result == "정답"
 
 
 @pytest.mark.asyncio

@@ -5,18 +5,18 @@ from loguru import logger
 
 import app.exceptions as exc
 from app.cores.config import configs
-from app.dependencies import get_game_service
-from app.features.game.service import GameService
+from app.dependencies import get_game_service_v1
+from app.features.game.v1.service import GameServiceV1
 
-game_router = APIRouter(tags=["Game"])
+game_router_v1 = APIRouter(tags=["Game"])
 game_logger = logger.bind(game=True)
 
 
-@game_router.get("/quizzes/{date}/guess/{word}", status_code=status.HTTP_200_OK)
+@game_router_v1.get("/quizzes/{date}/guess/{word}", status_code=status.HTTP_200_OK)
 async def guess(
     date: datetime.date,
     word: str,
-    game_service: GameService = Depends(get_game_service),
+    game_service: GameServiceV1 = Depends(get_game_service_v1),
 ):
     try:
         resp = await game_service.guess(date, word)
@@ -26,11 +26,11 @@ async def guess(
     return resp
 
 
-@game_router.get("/quizzes/{date}/hint/{rank}", status_code=status.HTTP_200_OK)
+@game_router_v1.get("/quizzes/{date}/hint/{rank}", status_code=status.HTTP_200_OK)
 async def hint(
     date: datetime.date,
     rank: int = Path(ge=0, le=configs.max_rank),
-    game_service: GameService = Depends(get_game_service),
+    game_service: GameServiceV1 = Depends(get_game_service_v1),
 ):
     try:
         resp = await game_service.hint(date, rank)
@@ -40,10 +40,10 @@ async def hint(
     return resp
 
 
-@game_router.get("/quizzes/{date}/recent-answer", status_code=status.HTTP_200_OK)
+@game_router_v1.get("/quizzes/{date}/recent-answer", status_code=status.HTTP_200_OK)
 async def recent_answer(
     date: datetime.date,
-    game_service: GameService = Depends(get_game_service),
+    game_service: GameServiceV1 = Depends(get_game_service_v1),
 ):
     try:
         resp = await game_service.read_recent_answer(date)

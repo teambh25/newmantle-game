@@ -11,8 +11,8 @@ def setup_logging():
         format="{time:YYYY-MM-DD HH:mm:ss!UTC} | {level} | {message}",
         filter=lambda record: "game" not in record["extra"],
         colorize=True,
-        backtrace=True,
-        diagnose=False,
+        backtrace=False,
+        diagnose=True,
         enqueue=True,
     )
     logger.add(

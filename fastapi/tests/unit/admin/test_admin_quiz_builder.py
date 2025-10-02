@@ -16,7 +16,9 @@ def test_build_redis_quiz(mock_quiz_builder, quiz_factory, tomorrow):
 
     rd_quiz = mock_quiz_builder.build_redis_quiz(quiz)
 
-    assert rd_quiz.answer_word == "정답"
+    assert (
+        rd_quiz.answer == '{"word":"정답","tag":"랜덤","description":"정답입니다."}'
+    )  # json string
     assert len(rd_quiz.scores_map) == 4  # 1 answer + 3 scores
     assert rd_quiz.scores_map["정답"] == ANSWER_INDICATOR
     assert rd_quiz.scores_map["사과"] == "95.00|1"

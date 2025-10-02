@@ -1,21 +1,22 @@
-# Setup
+## Setup
 ```
-# install docker-compose
-# sudo apt-get update
-# sudo apt install docker.io
-# sudo apt install docker-compose
-
-git clone 
-cd newmantle-game
+# create environment file
 cp .env.example .env
-# write your env file
-# vi .env 
-chomod +x nginx-reload.sh # for nginx reload
+vi .env 
+
+# make nginx reload script executable
+chmod +x nginx-reload.sh
+
+# start containers
 sudo docker-compose up -d
 ```
 
-- Test / flake8
+## Test / Formatter
 ```
+# run tests (pytest)
 docker-compose run --rm --entrypoint "" fastapi python -m pytest
-docker-compose run  --rm --entrypoint "" fastapi flake8 --show-source
+
+# code style check & auto-fix (Ruff)
+cd fastapi
+ruff check --fix & ruff format 
 ```

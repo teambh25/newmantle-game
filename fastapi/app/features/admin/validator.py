@@ -14,8 +14,8 @@ class Validator:
         """
         Validate the properties of a Quiz object according to business rules.
         """
-        if utils.is_past(quiz.date, self.today):
-            raise exc.QuizValidationError("Quiz date cannot be before today")
+        # if utils.is_past(quiz.date, self.today):
+        #     raise exc.QuizValidationError("Quiz date cannot be before today")
         if not utils.is_hangul_string(quiz.answer.word):
             raise exc.QuizValidationError("Answer is not hangul")
         if quiz.answer.word in quiz.scores:

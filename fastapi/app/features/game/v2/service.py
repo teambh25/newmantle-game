@@ -2,7 +2,8 @@ import datetime
 
 import app.exceptions as exc
 import app.schemas as schemas
-from app.cores.redis import ANSWER_INDICATOR, DELIMITER, RedisKeys
+import app.utils as utils
+from app.cores.redis import ANSWER_INDICATOR, RedisKeys, RedisQuizData
 from app.features.game.repository import GameRepo
 
 
@@ -20,7 +21,7 @@ class GameServiceV2:
             answer = await self._get_answer(date)
             resp = {"correct": True, "score": None, "rank": None, "answer": answer}
         else:
-            score, rank = self._extract_score_and_rank(score_rank)
+            score, rank = RedisQuizData.deserialize_score_and_rank(score_rank)
             resp = {"correct": False, "score": score, "rank": rank, "answer": None}
         return resp
 
@@ -33,18 +34,15 @@ class GameServiceV2:
             initial_consonant = word_score
             resp = {"hint": initial_consonant, "score": None}
         else:
-            word, score = self._extract_word_and_score(word_score)
+            word, score = RedisQuizData.deserialize_word_and_score(word_score)
             resp = {"hint": word, "score": score}
         return resp
 
     async def give_up(self, date: datetime.date):
-        if self._is_future_date(date):
+        if utils.is_future(date, self.today):
             raise exc.DateNotAllowed(f"date={date}")
         answer = await self._get_answer(date)
         return answer
-
-    def _is_future_date(self, date: datetime.date):
-        return date > self.today
 
     async def _get_answer(self, date: datetime.date):
         answer_key = RedisKeys.from_date(date).answers_key
@@ -52,13 +50,3 @@ class GameServiceV2:
         if answer is None:
             raise exc.QuizNotFound("answer not found")
         return schemas.Answer.model_validate_json(answer)
-
-    @staticmethod
-    def _extract_score_and_rank(score_rank: str):
-        score, rank = score_rank.split(DELIMITER)
-        return float(score), int(rank)
-
-    @staticmethod
-    def _extract_word_and_score(word_score: str):
-        word, score = word_score.split(DELIMITER)
-        return word, float(score)

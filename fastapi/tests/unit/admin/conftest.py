@@ -21,11 +21,6 @@ def yesterday(today):
 
 
 @pytest.fixture
-def max_rank():
-    return 3
-
-
-@pytest.fixture
 def quiz_factory(tomorrow):
     def _create_quiz(**kwargs):
         """

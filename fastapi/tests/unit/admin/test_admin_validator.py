@@ -12,6 +12,11 @@ def key_num():
 
 
 @pytest.fixture
+def max_rank():
+    return 3
+
+
+@pytest.fixture
 def mock_validator(today, max_rank):
     return Validator(today=today, max_rank=max_rank)
 

@@ -1,11 +1,10 @@
 import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Path, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from loguru import logger
 
 import app.exceptions as exc
 import app.schemas as schemas
-from app.cores.config import configs
 from app.dependencies import get_game_service_v2
 from app.features.game.v2.service import GameServiceV2
 
@@ -34,22 +33,22 @@ async def guess(
     return resp
 
 
-@game_router_v2.get(
-    "/quizzes/{date}/hint/{rank}",
-    status_code=status.HTTP_200_OK,
-    response_model=schemas.HintResp,
-)
-async def hint(
-    date: datetime.date,
-    rank: int = Path(ge=0, le=configs.max_rank),
-    game_service: GameServiceV2 = Depends(get_game_service_v2),
-):
-    try:
-        resp = await game_service.hint(date, rank)
-    except exc.RankNotFound as e:
-        game_logger.info(f"v2 | hint | {e.msg}")
-        raise HTTPException(status_code=404, detail="Invalid hint request")
-    return resp
+# @game_router_v2.get(
+#     "/quizzes/{date}/hint/{rank}",
+#     status_code=status.HTTP_200_OK,
+#     response_model=schemas.HintResp,
+# )
+# async def hint(
+#     date: datetime.date,
+#     rank: int = Path(ge=0, le=configs.max_rank),
+#     game_service: GameServiceV2 = Depends(get_game_service_v2),
+# ):
+#     try:
+#         resp = await game_service.hint(date, rank)
+#     except exc.RankNotFound as e:
+#         game_logger.info(f"v2 | hint | {e.msg}")
+#         raise HTTPException(status_code=404, detail="Invalid hint request")
+#     return resp
 
 
 @game_router_v2.get(

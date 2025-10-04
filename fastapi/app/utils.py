@@ -1,30 +1,29 @@
 import datetime
 from zoneinfo import ZoneInfo
 
-CONSONANTS = [
-    "ㄱ",
-    "ㄲ",
-    "ㄴ",
-    "ㄷ",
-    "ㄸ",
-    "ㄹ",
-    "ㅁ",
-    "ㅂ",
-    "ㅃ",
-    "ㅅ",
-    "ㅆ",
-    "ㅇ",
-    "ㅈ",
-    "ㅉ",
-    "ㅊ",
-    "ㅋ",
-    "ㅌ",
-    "ㅍ",
-    "ㅎ",
-]
-
 
 def extract_initial_consonant(word: str) -> str:
+    CONSONANTS = [
+        "ㄱ",
+        "ㄲ",
+        "ㄴ",
+        "ㄷ",
+        "ㄸ",
+        "ㄹ",
+        "ㅁ",
+        "ㅂ",
+        "ㅃ",
+        "ㅅ",
+        "ㅆ",
+        "ㅇ",
+        "ㅈ",
+        "ㅉ",
+        "ㅊ",
+        "ㅋ",
+        "ㅌ",
+        "ㅍ",
+        "ㅎ",
+    ]
     return "".join([CONSONANTS[get_initial_consonant_index(c)] for c in word])
 
 
@@ -52,3 +51,15 @@ def is_hangul_char(ch: str) -> bool:
 
 def is_hangul_string(s: str) -> bool:
     return s != "" and all(is_hangul_char(ch) for ch in s)
+
+
+def is_future(date: datetime.date, today: datetime.date):
+    return date > today
+
+
+def is_today(date: datetime.date, today: datetime.date):
+    return date == today
+
+
+def is_past(date: datetime.date, today: datetime.date):
+    return date < today

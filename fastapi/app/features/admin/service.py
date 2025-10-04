@@ -24,9 +24,7 @@ class AdminService:
     async def read_all_answers(self):
         answer_keys, answers = await self.repo.fetch_all_answers()
         return {
-            RedisKeys.extract_date_from_key(key): schemas.Answer.model_validate_json(
-                ans
-            )
+            RedisKeys.extract_date(key): schemas.Answer.model_validate_json(ans)
             for key, ans in zip(answer_keys, answers)
         }
 

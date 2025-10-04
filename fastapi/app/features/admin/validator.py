@@ -14,7 +14,7 @@ class Validator:
         """
         Validate the properties of a Quiz object according to business rules.
         """
-        if quiz.date < self.today:
+        if utils.is_past(quiz.date, self.today):
             raise exc.QuizValidationError("Quiz date cannot be before today")
         if not utils.is_hangul_string(quiz.answer.word):
             raise exc.QuizValidationError("Answer is not hangul")
@@ -26,7 +26,7 @@ class Validator:
             raise exc.QuizValidationError("The scores includes non-hangul word")
 
     def validate_delete_date(self, date: datetime.date):
-        if date == self.today:
+        if utils.is_today(date, self.today):
             raise exc.DateNotAllowed("Can't delete today's quiz")
 
     def validate_deleted_cnt(self, deleted_cnt: int, key_num: int):

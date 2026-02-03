@@ -26,8 +26,7 @@ services:
     volumes:
       - ./certbot/conf:/etc/letsencrypt
       - ./certbot/www:/var/www/certbot
-      - ./certbot/nginx-reload.sh:/nginx-reload.sh
-    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet --deploy-hook \"/nginx-reload.sh\"; sleep 24h; done'"
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet; sleep 24h; done'"
     depends_on:
       - nginx
   nginx:
@@ -38,7 +37,8 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-    - ./certbot/conf:/etc/letsencrypt
-    - ./certbot/www:/var/www/certbot
-    - ./nginx/nginx.conf:/etc/nginx/nginx.conf
-    - ./nginx/newmantle.conf:/etc/nginx/conf.d/newmantle.conf
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/newmantle.conf:/etc/nginx/conf.d/newmantle.conf
+    command: "/bin/sh -c 'while :; do sleep 12h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"

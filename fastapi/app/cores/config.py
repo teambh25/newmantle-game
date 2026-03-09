@@ -11,6 +11,8 @@ class Configs(BaseSettings):
     max_connection: int
     allowed_origins: List[str] = []
     allowed_origin_regex: str = ""
+    supabase_jwt_secret: str
+    supabase_url: str
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 

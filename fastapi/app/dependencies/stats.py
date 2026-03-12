@@ -13,13 +13,13 @@ from app.features.stats.service import StatService
 
 def get_stat_repo(
     session: AsyncSession = Depends(get_db_session),
+    redis_client: redis.Redis = Depends(get_redis_client),
 ) -> StatRepository:
-    return StatRepository(session)
+    return StatRepository(session, redis_client)
 
 
 def get_stat_service(
     repo: StatRepository = Depends(get_stat_repo),
-    redis_client: redis.Redis = Depends(get_redis_client),
     today: datetime.date = Depends(utils.get_today_date),
 ) -> StatService:
-    return StatService(repo, redis_client, today)
+    return StatService(repo, today)

@@ -1,50 +1,30 @@
 import datetime
 
-import redis.asyncio as redis
-
-from app.cores.redis import RedisStatKeys
 from app.features.stats.repository import StatRepository
-from app.features.stats.scripts import (
-    RECORD_GIVEUP_SCRIPT,
-    RECORD_GUESS_SCRIPT,
-    RECORD_HINT_SCRIPT,
-)
 
 
 class StatService:
     def __init__(
         self,
         repo: StatRepository,
-        redis_client: redis.Redis,
         today: datetime.date,
     ):
         self.repo = repo
-        self.redis = redis_client
         self.today = today
-        self._guess_script = self.redis.register_script(RECORD_GUESS_SCRIPT)
-        self._hint_script = self.redis.register_script(RECORD_HINT_SCRIPT)
-        self._giveup_script = self.redis.register_script(RECORD_GIVEUP_SCRIPT)
 
     async def record_guess(
         self, user_id: str, quiz_date: datetime.date, is_correct: bool
     ) -> None:
         """Record a guess. Sets status to SUCCESS on correct, FAIL on wrong."""
-        keys = RedisStatKeys.from_user_and_date(user_id, quiz_date)
-        result = "SUCCESS" if is_correct else "WRONG"
-        await self._guess_script(keys=[keys.key], args=[result])
-        await self.redis.expire(keys.key, keys.ttl)
+        await self.repo.record_guess(user_id, quiz_date, is_correct)
 
     async def record_hint(self, user_id: str, quiz_date: datetime.date) -> None:
         """Record a hint usage."""
-        keys = RedisStatKeys.from_user_and_date(user_id, quiz_date)
-        await self._hint_script(keys=[keys.key])
-        await self.redis.expire(keys.key, keys.ttl)
+        await self.repo.record_hint(user_id, quiz_date)
 
     async def record_giveup(self, user_id: str, quiz_date: datetime.date) -> None:
         """Record a give-up."""
-        keys = RedisStatKeys.from_user_and_date(user_id, quiz_date)
-        await self._giveup_script(keys=[keys.key])
-        await self.redis.expire(keys.key, keys.ttl)
+        await self.repo.record_giveup(user_id, quiz_date)
 
     ######## 여기 아래는 나중에 체크!! ##########3
     # async def get_today_stat(

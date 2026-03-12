@@ -1,15 +1,48 @@
 import datetime
 
+import redis.asyncio as redis
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.features.common.redis_keys import RedisStatKeys
 from app.features.stats.models import OutageDate, UserQuizResult
+from app.features.stats.scripts import (
+    RECORD_GIVEUP_SCRIPT,
+    RECORD_GUESS_SCRIPT,
+    RECORD_HINT_SCRIPT,
+)
 
 
 class StatRepository:
-    def __init__(self, session: AsyncSession):
+    def __init__(self, session: AsyncSession, redis_client: redis.Redis):
         self.session = session
+        self.redis = redis_client
+        self._guess_script = self.redis.register_script(RECORD_GUESS_SCRIPT)
+        self._hint_script = self.redis.register_script(RECORD_HINT_SCRIPT)
+        self._giveup_script = self.redis.register_script(RECORD_GIVEUP_SCRIPT)
+
+    # --- Redis: game-time stat recording ---
+
+    async def record_guess(
+        self, user_id: str, quiz_date: datetime.date, is_correct: bool
+    ) -> None:
+        keys = RedisStatKeys.from_user_and_date(user_id, quiz_date)
+        result = "SUCCESS" if is_correct else "WRONG"
+        await self._guess_script(keys=[keys.key], args=[result])
+        await self.redis.expire(keys.key, keys.ttl)
+
+    async def record_hint(self, user_id: str, quiz_date: datetime.date) -> None:
+        keys = RedisStatKeys.from_user_and_date(user_id, quiz_date)
+        await self._hint_script(keys=[keys.key])
+        await self.redis.expire(keys.key, keys.ttl)
+
+    async def record_giveup(self, user_id: str, quiz_date: datetime.date) -> None:
+        keys = RedisStatKeys.from_user_and_date(user_id, quiz_date)
+        await self._giveup_script(keys=[keys.key])
+        await self.redis.expire(keys.key, keys.ttl)
+
+    # --- DB: batch & query ---
 
     async def upsert_results(self, results: list[dict]) -> None:
         """Batch upsert quiz results from Redis flush.

@@ -6,7 +6,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.features.common.redis_keys import RedisStatKeys
-from app.features.stats.models import OutageDate, UserQuizResult
+from app.features.stats.models import UserQuizResult
 from app.features.common.redis_scripts import (
     RECORD_GIVEUP_SCRIPT,
     RECORD_GUESS_SCRIPT,
@@ -133,27 +133,3 @@ class StatRepository:
 
         return result_map
 
-    async def fetch_outage_dates(self) -> list[datetime.date]:
-        """Fetch all records, ordered by date."""
-        stmt = select(OutageDate.date).order_by(OutageDate.date)
-        result = await self.session.execute(stmt)
-        return list(result.scalars().all())
-
-    async def insert_outage_date(self, date: datetime.date) -> None:
-        stmt = (
-            insert(OutageDate)
-            .values(date=date)
-            .on_conflict_do_nothing(index_elements=["date"])
-        )
-        await self.session.execute(stmt)
-        await self.session.commit()
-
-    async def delete_outage_date(self, date: datetime.date) -> bool:
-        stmt = select(OutageDate).where(OutageDate.date == date)
-        result = await self.session.execute(stmt)
-        record = result.scalar_one_or_none()
-        if record:
-            await self.session.delete(record)
-            await self.session.commit()
-            return True
-        return False

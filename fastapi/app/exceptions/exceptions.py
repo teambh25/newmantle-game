@@ -54,3 +54,9 @@ class StatNotFound(BaseAppException):
     """Raised when no stat record exists for the requested date."""
 
     pass
+
+
+class OutageDateNotFound(BaseAppException):
+    """Raised when the outage date to delete does not exist."""
+
+    pass

@@ -1,6 +1,7 @@
 import datetime
 
 import app.exceptions as exc
+from app.features.common.repository import OutageDateRepository
 from app.features.stats.calculator import (
     ResultMap,
     calc_current_streak,
@@ -21,10 +22,12 @@ from app.schemas.stats import (
 class StatService:
     def __init__(
         self,
-        repo: StatRepository,
+        stat_repo: StatRepository,
+        outage_repo: OutageDateRepository,
         today: datetime.date,
     ):
-        self.repo = repo
+        self.stat_repo = stat_repo
+        self.outage_repo = outage_repo
         self.today = today
 
     # --- Recording ---
@@ -32,21 +35,21 @@ class StatService:
     async def record_guess(
         self, user_id: str, quiz_date: datetime.date, is_correct: bool
     ) -> None:
-        await self.repo.record_guess(user_id, quiz_date, is_correct)
+        await self.stat_repo.record_guess(user_id, quiz_date, is_correct)
 
     async def record_hint(self, user_id: str, quiz_date: datetime.date) -> None:
-        await self.repo.record_hint(user_id, quiz_date)
+        await self.stat_repo.record_hint(user_id, quiz_date)
 
     async def record_giveup(self, user_id: str, quiz_date: datetime.date) -> None:
-        await self.repo.record_giveup(user_id, quiz_date)
+        await self.stat_repo.record_giveup(user_id, quiz_date)
 
     # --- Query ---
 
     async def get_overview(
         self, user_id: str, start_date: datetime.date, end_date: datetime.date
     ) -> StatOverviewResp:
-        result_map = await self.repo.fetch_all_results(user_id, end_date)
-        outage_dates = set(await self.repo.fetch_outage_dates())
+        result_map = await self.stat_repo.fetch_all_results(user_id, end_date)
+        outage_dates = set(await self.outage_repo.fetch_all())
 
         calendar = self._build_calendar(
             result_map, outage_dates, start_date, end_date
@@ -58,7 +61,7 @@ class StatService:
     async def get_daily(
         self, user_id: str, quiz_date: datetime.date
     ) -> StatDailyResp:
-        stat = await self.repo.fetch_redis_stat(user_id, quiz_date)
+        stat = await self.stat_repo.fetch_redis_stat(user_id, quiz_date)
         if stat is None:
             raise exc.StatNotFound(f"No stat found for {quiz_date}")
         return StatDailyResp(

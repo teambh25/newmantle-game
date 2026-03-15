@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.features.common.redis_keys import RedisStatKeys
 from app.features.stats.models import OutageDate, UserQuizResult
-from app.features.stats.scripts import (
+from app.features.common.redis_scripts import (
     RECORD_GIVEUP_SCRIPT,
     RECORD_GUESS_SCRIPT,
     RECORD_HINT_SCRIPT,
@@ -29,18 +29,55 @@ class StatRepository:
     ) -> None:
         keys = RedisStatKeys.from_user_and_date(user_id, quiz_date)
         result = "SUCCESS" if is_correct else "WRONG"
-        await self._guess_script(keys=[keys.key], args=[result])
-        await self.redis.expire(keys.key, keys.ttl)
+        await self._guess_script(keys=[keys.key], args=[result, keys.ttl])
 
     async def record_hint(self, user_id: str, quiz_date: datetime.date) -> None:
         keys = RedisStatKeys.from_user_and_date(user_id, quiz_date)
-        await self._hint_script(keys=[keys.key])
-        await self.redis.expire(keys.key, keys.ttl)
+        await self._hint_script(keys=[keys.key], args=[keys.ttl])
 
     async def record_giveup(self, user_id: str, quiz_date: datetime.date) -> None:
         keys = RedisStatKeys.from_user_and_date(user_id, quiz_date)
-        await self._giveup_script(keys=[keys.key])
-        await self.redis.expire(keys.key, keys.ttl)
+        await self._giveup_script(keys=[keys.key], args=[keys.ttl])
+
+    # --- Redis: query ---
+
+    async def fetch_redis_stat(
+        self, user_id: str, quiz_date: datetime.date
+    ) -> dict | None:
+        """Get a single date's stat from Redis Hash. Returns None if no data."""
+        keys = RedisStatKeys.from_user_and_date(user_id, quiz_date)
+        data = await self.redis.hgetall(keys.key)
+        if not data:
+            return None
+        return {
+            "date": quiz_date,
+            "status": data.get("status", "FAIL"),
+            "guess_count": int(data.get("guesses", 0)),
+            "hint_count": int(data.get("hints", 0)),
+        }
+
+    async def fetch_recent_redis_stats(
+        self, user_id: str, end_date: datetime.date
+    ) -> list[dict]:
+        """Fetch stat keys for the last 7 days (TTL window) via pipeline."""
+        dates = [end_date - datetime.timedelta(days=i) for i in range(7)]
+        async with self.redis.pipeline(transaction=False) as pipe:
+            for d in dates:
+                keys = RedisStatKeys.from_user_and_date(user_id, d)
+                pipe.hgetall(keys.key)
+            responses = await pipe.execute()
+
+        results = []
+        for d, data in zip(dates, responses):
+            if not data:
+                continue
+            results.append({
+                "date": d,
+                "status": data.get("status", "FAIL"),
+                "guess_count": int(data.get("guesses", 0)),
+                "hint_count": int(data.get("hints", 0)),
+            })
+        return results
 
     # --- DB: batch & query ---
 
@@ -63,24 +100,38 @@ class StatRepository:
         await self.session.execute(stmt)
         await self.session.commit()
 
-    async def fetch_results_by_range(
-        self,
-        user_id: str,
-        start_date: datetime.date,
-        end_date: datetime.date,
-    ) -> list[UserQuizResult]:
-        """Fetch records within a date range, ordered by quiz_date."""
+    async def fetch_all_results(
+        self, user_id: str, end_date: datetime.date
+    ) -> dict[datetime.date, dict]:
+        """Fetch all records from DB + Redis merged. Redis takes priority for same date.
+
+        Returns: {date: {"status": str, "guess_count": int, "hint_count": int}}
+        """
+        # DB full scan
         stmt = (
             select(UserQuizResult)
-            .where(
-                UserQuizResult.user_id == user_id,
-                UserQuizResult.quiz_date >= start_date,
-                UserQuizResult.quiz_date <= end_date,
-            )
+            .where(UserQuizResult.user_id == user_id)
             .order_by(UserQuizResult.quiz_date)
         )
-        result = await self.session.execute(stmt)
-        return list(result.scalars().all())
+        db_result = await self.session.execute(stmt)
+        result_map: dict[datetime.date, dict] = {}
+        for r in db_result.scalars().all():
+            result_map[r.quiz_date] = {
+                "status": r.status.value,
+                "guess_count": r.guess_count,
+                "hint_count": r.hint_count,
+            }
+
+        # Redis recent stats (overwrites DB for same date)
+        redis_stats = await self.fetch_recent_redis_stats(user_id, end_date)
+        for s in redis_stats:
+            result_map[s["date"]] = {
+                "status": s["status"],
+                "guess_count": s["guess_count"],
+                "hint_count": s["hint_count"],
+            }
+
+        return result_map
 
     async def fetch_outage_dates(self) -> list[datetime.date]:
         """Fetch all records, ordered by date."""

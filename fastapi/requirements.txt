@@ -7,6 +7,10 @@ PyJWT
 # Redis
 redis
 
+# Supabase (PostgreSQL)
+sqlalchemy[asyncio]
+asyncpg
+
 # Test
 httpx
 pytest

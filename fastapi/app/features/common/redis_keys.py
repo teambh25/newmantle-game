@@ -55,10 +55,7 @@ class RedisQuizData:
 @dataclass(frozen=True)
 class RedisStatKeys:
     key: str
-    ttl: int = 60 * 60 * 48  # 2 days
-
-    OUTAGE_CACHE_KEY: str = "cache:outage_dates"
-    OUTAGE_CACHE_TTL: int = 60 * 60 * 24  # 1 day
+    ttl: int = 60 * 60 * 24 * 7  # 7 days
 
     @classmethod
     def from_user_and_date(cls, user_id: str, date: datetime.date):

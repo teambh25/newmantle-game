@@ -1,6 +1,21 @@
 import datetime
 
+import app.exceptions as exc
+from app.features.stats.calculator import (
+    ResultMap,
+    calc_current_streak,
+    calc_max_streak,
+    to_calendar_status,
+)
+from app.features.stats.models import UserQuizStatus
 from app.features.stats.repository import StatRepository
+from app.schemas.stats import (
+    CalendarEntry,
+    CalendarStatus,
+    StatDailyResp,
+    StatOverviewResp,
+    StatSummary,
+)
 
 
 class StatService:
@@ -12,116 +27,100 @@ class StatService:
         self.repo = repo
         self.today = today
 
+    # --- Recording ---
+
     async def record_guess(
         self, user_id: str, quiz_date: datetime.date, is_correct: bool
     ) -> None:
-        """Record a guess. Sets status to SUCCESS on correct, FAIL on wrong."""
         await self.repo.record_guess(user_id, quiz_date, is_correct)
 
     async def record_hint(self, user_id: str, quiz_date: datetime.date) -> None:
-        """Record a hint usage."""
         await self.repo.record_hint(user_id, quiz_date)
 
     async def record_giveup(self, user_id: str, quiz_date: datetime.date) -> None:
-        """Record a give-up."""
         await self.repo.record_giveup(user_id, quiz_date)
 
-    ######## 여기 아래는 나중에 체크!! ##########3
-    # async def get_today_stat(
-    #     self, user_id: str, quiz_date: datetime.date
-    # ) -> dict | None:
-    #     """Get today's stat from Redis."""
-    #     keys = RedisStatKeys.from_user_and_date(user_id, quiz_date)
-    #     data = await self.redis.hgetall(keys.key)
-    #     if not data:
-    #         return None
-    #     return {
-    #         "status": data.get(keys.F_STATUS, "FAIL"),
-    #         "guess_count": int(data.get(keys.F_GUESSES, 0)),
-    #         "hint_count": int(data.get(keys.F_HINTS, 0)),
-    #     }
+    # --- Query ---
 
-    # async def get_calendar(
-    #     self,
-    #     user_id: str,
-    #     start_date: datetime.date,
-    #     end_date: datetime.date,
-    # ) -> list[dict]:
-    #     """Fetch quiz results for calendar view. Merges today's Redis data with past DB data."""
-    #     results = await self.repo.fetch_results_by_range(
-    #         user_id, start_date, end_date
-    #     )
-    #     calendar = [
-    #         {
-    #             "date": r.quiz_date,
-    #             "status": r.status.value,
-    #             "guess_count": r.guess_count,
-    #             "hint_count": r.hint_count,
-    #         }
-    #         for r in results
-    #     ]
+    async def get_overview(
+        self, user_id: str, start_date: datetime.date, end_date: datetime.date
+    ) -> StatOverviewResp:
+        result_map = await self.repo.fetch_all_results(user_id, end_date)
+        outage_dates = set(await self.repo.fetch_outage_dates())
 
-    #     # Merge today's data from Redis if in range
-    #     if start_date <= self.today <= end_date:
-    #         today_stat = await self.get_today_stat(user_id, self.today)
-    #         if today_stat:
-    #             calendar = [c for c in calendar if c["date"] != self.today]
-    #             calendar.append({"date": self.today, **today_stat})
-    #             calendar.sort(key=lambda c: c["date"])
+        calendar = self._build_calendar(
+            result_map, outage_dates, start_date, end_date
+        )
+        summary = self._build_summary(result_map, outage_dates, end_date)
 
-    #     return calendar
+        return StatOverviewResp(calendar=calendar, summary=summary)
 
-    # async def get_streak(self, user_id: str) -> int:
-    #     """Calculate current consecutive success days."""
-    #     results = await self.repo.fetch_results_by_range(
-    #         user_id,
-    #         self.today - datetime.timedelta(days=365),
-    #         self.today,
-    #     )
-    #     outage_dates = await self._get_outage_dates()
+    async def get_daily(
+        self, user_id: str, quiz_date: datetime.date
+    ) -> StatDailyResp:
+        stat = await self.repo.fetch_redis_stat(user_id, quiz_date)
+        if stat is None:
+            raise exc.StatNotFound(f"No stat found for {quiz_date}")
+        return StatDailyResp(
+            date=quiz_date,
+            status=stat["status"],
+            guess_count=stat["guess_count"],
+            hint_count=stat["hint_count"],
+        )
 
-    #     result_map = {r.quiz_date: r.status.value for r in results}
+    # --- Private helpers ---
 
-    #     # Merge today's Redis data
-    #     today_stat = await self.get_today_stat(user_id, self.today)
-    #     if today_stat:
-    #         result_map[self.today] = today_stat["status"]
+    @staticmethod
+    def _build_calendar(
+        result_map: ResultMap,
+        outage_dates: set[datetime.date],
+        start_date: datetime.date,
+        end_date: datetime.date,
+    ) -> list[CalendarEntry]:
+        """Build calendar entries for the requested date range."""
+        calendar: list[CalendarEntry] = []
 
-    #     # If today is not SUCCESS, start counting from yesterday
-    #     start = self.today
-    #     if result_map.get(self.today) != "SUCCESS":
-    #         start = self.today - datetime.timedelta(days=1)
+        for d, entry in result_map.items():
+            if start_date <= d <= end_date:
+                cal_status = to_calendar_status(
+                    entry["status"], entry["hint_count"], d in outage_dates
+                )
+                calendar.append(CalendarEntry(date=d, status=cal_status))
 
-    #     streak = 0
-    #     current = start
-    #     while True:
-    #         if current in outage_dates:
-    #             current -= datetime.timedelta(days=1)
-    #             continue
-    #         if result_map.get(current) == "SUCCESS":
-    #             streak += 1
-    #             current -= datetime.timedelta(days=1)
-    #         else:
-    #             break
+        # Add OUTAGE entries for dates with no result record
+        for od in outage_dates:
+            if start_date <= od <= end_date and od not in result_map:
+                calendar.append(CalendarEntry(date=od, status=CalendarStatus.OUTAGE))
 
-    #     return streak
+        calendar.sort(key=lambda c: c.date)
+        return calendar
 
-    # async def _get_outage_dates(self) -> set[datetime.date]:
-    #     """Get outage dates with Redis caching."""
-    #     cached = await self.redis.smembers(RedisStatKeys.OUTAGE_CACHE_KEY)
-    #     if cached:
-    #         return {datetime.date.fromisoformat(d) for d in cached}
+    @staticmethod
+    def _build_summary(
+        result_map: ResultMap,
+        outage_dates: set[datetime.date],
+        end_date: datetime.date,
+    ) -> StatSummary:
+        """Calculate summary stats from all results."""
+        total_success = 0
+        total_guess = 0
+        total_hints = 0
 
-    #     dates = await self.repo.fetch_outage_dates()
-    #     if dates:
-    #         await self.redis.sadd(
-    #             RedisStatKeys.OUTAGE_CACHE_KEY, *[d.isoformat() for d in dates]
-    #         )
-    #         await self.redis.expire(
-    #             RedisStatKeys.OUTAGE_CACHE_KEY, RedisStatKeys.OUTAGE_CACHE_TTL
-    #         )
-    #     return set(dates)
+        for entry in result_map.values():
+            if entry["status"] == UserQuizStatus.SUCCESS.value:
+                total_success += 1
+                total_guess += entry["guess_count"]
+                total_hints += entry["hint_count"]
 
-    # async def invalidate_outage_cache(self) -> None:
-    #     """Clear outage dates cache (called after admin changes)."""
-    #     await self.redis.delete(RedisStatKeys.OUTAGE_CACHE_KEY)
+        avg_guess = round(total_guess / total_success, 2) if total_success else 0.0
+        avg_hints = round(total_hints / total_success, 2) if total_success else 0.0
+
+        return StatSummary(
+            total_success_days=total_success,
+            current_streak=calc_current_streak(
+                result_map, outage_dates, end_date
+            ),
+            max_streak=calc_max_streak(result_map, outage_dates),
+            avg_guess_when_correct=avg_guess,
+            avg_hints_when_correct=avg_hints,
+        )

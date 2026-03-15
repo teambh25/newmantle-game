@@ -48,3 +48,9 @@ class DateNotAllowed(BaseAppException):
     such as querying future answers or restricted historical data."""
 
     pass
+
+
+class StatNotFound(BaseAppException):
+    """Raised when no stat record exists for the requested date."""
+
+    pass

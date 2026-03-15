@@ -5,6 +5,7 @@ from .exceptions import (
     QuizNotFound,
     QuizValidationError,
     RankNotFound,
+    StatNotFound,
     WordNotFound,
 )
 from .handlers import authentication_exception_handler, global_exception_handler
@@ -19,4 +20,5 @@ __all__ = [
     "WordNotFound",
     "RankNotFound",
     "DateNotAllowed",
+    "StatNotFound",
 ]

@@ -3,9 +3,9 @@
 Suites 10, 13-15 from docs/user-stats-test-plan.md.
 """
 
-import datetime
 
-import pytest
+
+from tests.unit.stats.conftest import D, make_entry
 
 from app.features.stats.calculator import (
     calc_current_streak,
@@ -14,9 +14,6 @@ from app.features.stats.calculator import (
 )
 from app.schemas.stats import CalendarStatus
 
-from tests.unit.stats.conftest import D, make_entry
-
-
 # ---------------------------------------------------------------------------
 # Suite 10: to_calendar_status
 # ---------------------------------------------------------------------------
@@ -24,10 +21,15 @@ from tests.unit.stats.conftest import D, make_entry
 
 class TestToCalendarStatus:
     def test_success_without_hint(self):
-        assert to_calendar_status("SUCCESS", 0, False) == CalendarStatus.SUCCESS_WITHOUT_HINT
+        assert (
+            to_calendar_status("SUCCESS", 0, False)
+            == CalendarStatus.SUCCESS_WITHOUT_HINT
+        )
 
     def test_success_with_hint(self):
-        assert to_calendar_status("SUCCESS", 2, False) == CalendarStatus.SUCCESS_WITH_HINT
+        assert (
+            to_calendar_status("SUCCESS", 2, False) == CalendarStatus.SUCCESS_WITH_HINT
+        )
 
     def test_fail(self):
         assert to_calendar_status("FAIL", 0, False) == CalendarStatus.FAIL

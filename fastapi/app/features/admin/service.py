@@ -6,8 +6,8 @@ import app.schemas as schemas
 from app.features.admin.quiz_builder import QuizBuilder
 from app.features.admin.repository import AdminRepo
 from app.features.admin.validator import Validator
-from app.features.common.repository import OutageDateRepository
 from app.features.common.redis_keys import RedisQuizKeys
+from app.features.common.repository import OutageDateRepository
 
 
 class AdminService:

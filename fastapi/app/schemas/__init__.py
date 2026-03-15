@@ -1,4 +1,4 @@
-from .admin import Quiz, OutageDateRequest, OutageDateListResp
+from .admin import OutageDateListResp, OutageDateRequest, Quiz
 from .common import Answer
 from .game import GiveUpResp, GuessResp, HintResp
 

@@ -51,16 +51,12 @@ class StatService:
         result_map = await self.stat_repo.fetch_all_results(user_id, end_date)
         outage_dates = set(await self.outage_repo.fetch_all())
 
-        calendar = self._build_calendar(
-            result_map, outage_dates, start_date, end_date
-        )
+        calendar = self._build_calendar(result_map, outage_dates, start_date, end_date)
         summary = self._build_summary(result_map, outage_dates, end_date)
 
         return StatOverviewResp(calendar=calendar, summary=summary)
 
-    async def get_daily(
-        self, user_id: str, quiz_date: datetime.date
-    ) -> StatDailyResp:
+    async def get_daily(self, user_id: str, quiz_date: datetime.date) -> StatDailyResp:
         stat = await self.stat_repo.fetch_redis_stat(user_id, quiz_date)
         if stat is None:
             raise exc.StatNotFound(f"No stat found for {quiz_date}")
@@ -120,9 +116,7 @@ class StatService:
 
         return StatSummary(
             total_success_days=total_success,
-            current_streak=calc_current_streak(
-                result_map, outage_dates, end_date
-            ),
+            current_streak=calc_current_streak(result_map, outage_dates, end_date),
             max_streak=calc_max_streak(result_map, outage_dates),
             avg_guess_when_correct=avg_guess,
             avg_hints_when_correct=avg_hints,

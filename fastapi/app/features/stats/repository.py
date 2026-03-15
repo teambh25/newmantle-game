@@ -6,12 +6,12 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.features.common.redis_keys import RedisStatKeys
-from app.features.stats.models import UserQuizResult
 from app.features.common.redis_scripts import (
     RECORD_GIVEUP_SCRIPT,
     RECORD_GUESS_SCRIPT,
     RECORD_HINT_SCRIPT,
 )
+from app.features.stats.models import UserQuizResult
 
 
 class StatRepository:
@@ -71,12 +71,14 @@ class StatRepository:
         for d, data in zip(dates, responses):
             if not data:
                 continue
-            results.append({
-                "date": d,
-                "status": data.get("status", "FAIL"),
-                "guess_count": int(data.get("guesses", 0)),
-                "hint_count": int(data.get("hints", 0)),
-            })
+            results.append(
+                {
+                    "date": d,
+                    "status": data.get("status", "FAIL"),
+                    "guess_count": int(data.get("guesses", 0)),
+                    "hint_count": int(data.get("hints", 0)),
+                }
+            )
         return results
 
     # --- DB: batch & query ---
@@ -132,4 +134,3 @@ class StatRepository:
             }
 
         return result_map
-

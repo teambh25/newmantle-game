@@ -7,9 +7,7 @@ from app.schemas.stats import CalendarStatus
 ResultMap = dict[datetime.date, dict]
 
 
-def to_calendar_status(
-    status: str, hint_count: int, is_outage: bool
-) -> CalendarStatus:
+def to_calendar_status(status: str, hint_count: int, is_outage: bool) -> CalendarStatus:
     if is_outage:
         return CalendarStatus.OUTAGE
     if status == UserQuizStatus.SUCCESS.value:

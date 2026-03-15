@@ -2,7 +2,6 @@ import datetime
 
 import pytest
 
-
 D = datetime.date
 
 

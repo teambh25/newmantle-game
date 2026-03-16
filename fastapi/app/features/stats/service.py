@@ -3,13 +3,13 @@ import datetime
 import app.exceptions as exc
 from app.features.common.repository import OutageDateRepository
 from app.features.stats.calculator import (
-    ResultMap,
     calc_current_streak,
     calc_max_streak,
     to_calendar_status,
 )
-from app.features.stats.models import UserQuizStatus
+from app.features.stats.dto import ResultMap
 from app.features.stats.repository import StatRepository
+from app.models import UserQuizStatus
 from app.schemas.stats import (
     CalendarEntry,
     CalendarStatus,
@@ -62,9 +62,9 @@ class StatService:
             raise exc.StatNotFound(f"No stat found for {quiz_date}")
         return StatDailyResp(
             date=quiz_date,
-            status=stat["status"],
-            guess_count=stat["guess_count"],
-            hint_count=stat["hint_count"],
+            status=stat.status,
+            guess_count=stat.guess_count,
+            hint_count=stat.hint_count,
         )
 
     # --- Private helpers ---
@@ -82,7 +82,7 @@ class StatService:
         for d, entry in result_map.items():
             if start_date <= d <= end_date:
                 cal_status = to_calendar_status(
-                    entry["status"], entry["hint_count"], d in outage_dates
+                    entry.status, entry.hint_count, d in outage_dates
                 )
                 calendar.append(CalendarEntry(date=d, status=cal_status))
 
@@ -106,10 +106,10 @@ class StatService:
         total_hints = 0
 
         for entry in result_map.values():
-            if entry["status"] == UserQuizStatus.SUCCESS.value:
+            if entry.status == UserQuizStatus.SUCCESS.value:
                 total_success += 1
-                total_guess += entry["guess_count"]
-                total_hints += entry["hint_count"]
+                total_guess += entry.guess_count
+                total_hints += entry.hint_count
 
         avg_guess = round(total_guess / total_success, 2) if total_success else 0.0
         avg_hints = round(total_hints / total_success, 2) if total_success else 0.0

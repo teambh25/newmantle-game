@@ -11,7 +11,8 @@ from app.features.common.redis_scripts import (
     RECORD_GUESS_SCRIPT,
     RECORD_HINT_SCRIPT,
 )
-from app.features.stats.models import UserQuizResult
+from app.features.stats.dto import QuizResultEntry, ResultMap
+from app.models import UserQuizResult
 
 
 class StatRepository:
@@ -43,22 +44,21 @@ class StatRepository:
 
     async def fetch_redis_stat(
         self, user_id: str, quiz_date: datetime.date
-    ) -> dict | None:
+    ) -> QuizResultEntry | None:
         """Get a single date's stat from Redis Hash. Returns None if no data."""
         keys = RedisStatKeys.from_user_and_date(user_id, quiz_date)
         data = await self.redis.hgetall(keys.key)
         if not data:
             return None
-        return {
-            "date": quiz_date,
-            "status": data.get("status", "FAIL"),
-            "guess_count": int(data.get("guesses", 0)),
-            "hint_count": int(data.get("hints", 0)),
-        }
+        return QuizResultEntry(
+            status=data.get("status", "FAIL"),
+            guess_count=int(data.get("guesses", 0)),
+            hint_count=int(data.get("hints", 0)),
+        )
 
     async def fetch_recent_redis_stats(
         self, user_id: str, end_date: datetime.date
-    ) -> list[dict]:
+    ) -> dict[datetime.date, QuizResultEntry]:
         """Fetch stat keys for the last 7 days (TTL window) via pipeline."""
         dates = [end_date - datetime.timedelta(days=i) for i in range(7)]
         async with self.redis.pipeline(transaction=False) as pipe:
@@ -67,17 +67,14 @@ class StatRepository:
                 pipe.hgetall(keys.key)
             responses = await pipe.execute()
 
-        results = []
+        results: dict[datetime.date, QuizResultEntry] = {}
         for d, data in zip(dates, responses):
             if not data:
                 continue
-            results.append(
-                {
-                    "date": d,
-                    "status": data.get("status", "FAIL"),
-                    "guess_count": int(data.get("guesses", 0)),
-                    "hint_count": int(data.get("hints", 0)),
-                }
+            results[d] = QuizResultEntry(
+                status=data.get("status", "FAIL"),
+                guess_count=int(data.get("guesses", 0)),
+                hint_count=int(data.get("hints", 0)),
             )
         return results
 
@@ -104,11 +101,8 @@ class StatRepository:
 
     async def fetch_all_results(
         self, user_id: str, end_date: datetime.date
-    ) -> dict[datetime.date, dict]:
-        """Fetch all records from DB + Redis merged. Redis takes priority for same date.
-
-        Returns: {date: {"status": str, "guess_count": int, "hint_count": int}}
-        """
+    ) -> ResultMap:
+        """Fetch all records from DB + Redis merged. Redis takes priority for same date."""
         # DB full scan
         stmt = (
             select(UserQuizResult)
@@ -116,21 +110,16 @@ class StatRepository:
             .order_by(UserQuizResult.quiz_date)
         )
         db_result = await self.session.execute(stmt)
-        result_map: dict[datetime.date, dict] = {}
+        result_map: ResultMap = {}
         for r in db_result.scalars().all():
-            result_map[r.quiz_date] = {
-                "status": r.status.value,
-                "guess_count": r.guess_count,
-                "hint_count": r.hint_count,
-            }
+            result_map[r.quiz_date] = QuizResultEntry(
+                status=r.status.value,
+                guess_count=r.guess_count,
+                hint_count=r.hint_count,
+            )
 
         # Redis recent stats (overwrites DB for same date)
         redis_stats = await self.fetch_recent_redis_stats(user_id, end_date)
-        for s in redis_stats:
-            result_map[s["date"]] = {
-                "status": s["status"],
-                "guess_count": s["guess_count"],
-                "hint_count": s["hint_count"],
-            }
+        result_map.update(redis_stats)
 
         return result_map

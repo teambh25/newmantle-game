@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.features.stats.models import OutageDate
+from app.models import OutageDate
 
 
 class OutageDateRepository:

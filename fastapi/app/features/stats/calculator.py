@@ -1,10 +1,8 @@
 import datetime
 
-from app.features.stats.models import UserQuizStatus
+from app.features.stats.dto import ResultMap
+from app.models import UserQuizStatus
 from app.schemas.stats import CalendarStatus
-
-# Type alias: {date: {"status": str, "guess_count": int, "hint_count": int}}
-ResultMap = dict[datetime.date, dict]
 
 
 def to_calendar_status(status: str, hint_count: int, is_outage: bool) -> CalendarStatus:
@@ -25,7 +23,7 @@ def calc_current_streak(
     """Count consecutive SUCCESS days backwards from end_date."""
     end_entry = result_map.get(end_date)
     current = end_date
-    if not end_entry or end_entry["status"] != UserQuizStatus.SUCCESS.value:
+    if not end_entry or end_entry.status != UserQuizStatus.SUCCESS.value:
         current = end_date - datetime.timedelta(days=1)
 
     streak = 0
@@ -34,7 +32,7 @@ def calc_current_streak(
             current -= datetime.timedelta(days=1)
             continue
         entry = result_map.get(current)
-        if entry and entry["status"] == UserQuizStatus.SUCCESS.value:
+        if entry and entry.status == UserQuizStatus.SUCCESS.value:
             streak += 1
             current -= datetime.timedelta(days=1)
         else:
@@ -55,7 +53,7 @@ def calc_max_streak(
         if d in outage_dates:
             continue
 
-        if result_map[d]["status"] == UserQuizStatus.SUCCESS.value:
+        if result_map[d].status == UserQuizStatus.SUCCESS.value:
             if prev_date is not None and _has_gap(prev_date, d, outage_dates):
                 streak = 0
             streak += 1

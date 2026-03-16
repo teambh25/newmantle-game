@@ -6,8 +6,9 @@ from loguru import logger
 import app.exceptions as exc
 import app.schemas as schemas
 from app.cores.auth import authenticate_admin
-from app.dependencies import get_admin_service
+from app.dependencies import get_admin_service, get_stat_service
 from app.features.admin.service import AdminService
+from app.features.stats.service import StatService
 
 admin_router = APIRouter(
     prefix="/admin",
@@ -97,3 +98,23 @@ async def delete_outage_date(
         raise HTTPException(status_code=404, detail=e.msg)
     logger.success(f"outage date deleted: {date}")
     return {"date": date}
+
+
+@admin_router.post(
+    "/stats/flush",
+    status_code=status.HTTP_200_OK,
+    response_model=schemas.FlushResponse,
+)
+async def flush_stats(
+    body: schemas.FlushRequest,
+    stat_service: StatService = Depends(get_stat_service),
+):
+    flushed_count, skipped_count = await stat_service.flush_to_db(body.date)
+    logger.success(
+        f"stats flushed: date={body.date}, flushed={flushed_count}, skipped={skipped_count}"
+    )
+    return schemas.FlushResponse(
+        date=body.date,
+        flushed_count=flushed_count,
+        skipped_count=skipped_count,
+    )

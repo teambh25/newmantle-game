@@ -43,6 +43,15 @@ class StatService:
     async def record_giveup(self, user_id: str, quiz_date: datetime.date) -> None:
         await self.stat_repo.record_giveup(user_id, quiz_date)
 
+    # --- Batch ---
+
+    async def flush_to_db(self, quiz_date: datetime.date) -> tuple[int, int]:
+        """Flush Redis stats for a given date to DB.
+
+        Returns (flushed_count, skipped_count).
+        """
+        return await self.stat_repo.flush_stats(quiz_date)
+
     # --- Query ---
 
     async def get_overview(
@@ -57,7 +66,7 @@ class StatService:
         return StatOverviewResp(calendar=calendar, summary=summary)
 
     async def get_daily(self, user_id: str, quiz_date: datetime.date) -> StatDailyResp:
-        stat = await self.stat_repo.fetch_redis_stat(user_id, quiz_date)
+        stat = await self.stat_repo.fetch_stat(user_id, quiz_date)
         if stat is None:
             raise exc.StatNotFound(f"No stat found for {quiz_date}")
         return StatDailyResp(

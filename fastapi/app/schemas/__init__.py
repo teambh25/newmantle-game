@@ -1,4 +1,10 @@
-from .admin import OutageDateListResp, OutageDateRequest, Quiz
+from .admin import (
+    FlushRequest,
+    FlushResponse,
+    OutageDateListResp,
+    OutageDateRequest,
+    Quiz,
+)
 from .common import Answer
 from .game import GiveUpResp, GuessResp, HintResp
 
@@ -7,6 +13,8 @@ __all__ = [
     "Quiz",
     "OutageDateRequest",
     "OutageDateListResp",
+    "FlushRequest",
+    "FlushResponse",
     "HintResp",
     "GiveUpResp",
     "GuessResp",

@@ -18,3 +18,13 @@ class OutageDateRequest(BaseModel):
 
 class OutageDateListResp(BaseModel):
     outage_dates: list[datetime.date]
+
+
+class FlushRequest(BaseModel):
+    date: datetime.date
+
+
+class FlushResponse(BaseModel):
+    date: datetime.date
+    flushed_count: int
+    skipped_count: int

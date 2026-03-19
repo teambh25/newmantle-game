@@ -57,10 +57,10 @@ class StatRepository:
         )
 
     async def fetch_recent_stats(
-        self, user_id: str, end_date: datetime.date
+        self, user_id: str, end_date: datetime.date, days: int
     ) -> dict[datetime.date, QuizResultEntry]:
-        """Fetch stat keys for the last 7 days (TTL window) via pipeline."""
-        dates = [end_date - datetime.timedelta(days=i) for i in range(7)]
+        """Fetch stat keys for the recent days (TTL window) via pipeline."""
+        dates = [end_date - datetime.timedelta(days=i) for i in range(days)]
         async with self.redis.pipeline(transaction=False) as pipe:
             for d in dates:
                 keys = RedisStatKeys.from_user_and_date(user_id, d)
@@ -99,7 +99,9 @@ class StatRepository:
             )
 
         # Redis recent stats (overwrites DB for same date)
-        redis_stats = await self.fetch_recent_stats(user_id, end_date)
+        redis_stats = await self.fetch_recent_stats(
+            user_id, end_date, RedisStatKeys.TTL_DAYS
+        )
         result_map.update(redis_stats)
 
         return result_map

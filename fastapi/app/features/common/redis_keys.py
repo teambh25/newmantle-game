@@ -1,6 +1,6 @@
 import datetime
 from dataclasses import dataclass
-from typing import Dict
+from typing import ClassVar, Dict
 
 ANSWER_INDICATOR = "answer"
 
@@ -54,8 +54,10 @@ class RedisQuizData:
 
 @dataclass(frozen=True)
 class RedisStatKeys:
+    TTL_DAYS: ClassVar[int] = 7
+
     key: str
-    ttl: int = 60 * 60 * 24 * 7  # 7 days
+    ttl: int = 60 * 60 * 24 * TTL_DAYS
 
     @classmethod
     def from_user_and_date(cls, user_id: str, date: datetime.date):

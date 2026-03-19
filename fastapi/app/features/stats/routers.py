@@ -26,14 +26,14 @@ async def get_stats_overview(
 
 
 @stats_router.get(
-    "/{date}",
+    "/{user_id}/{date}",
     status_code=status.HTTP_200_OK,
     response_model=StatDailyResp,
 )
 async def get_stats_daily(
+    user_id: str,
     date: datetime.date,
     stat_service: StatService = Depends(get_stat_service),
-    user_id: str = Depends(get_required_user),
 ):
     try:
         return await stat_service.get_daily(user_id, date)

@@ -12,7 +12,7 @@ from sqlalchemy import select
 
 from app.features.common.redis_keys import RedisStatKeys
 from app.models import UserQuizResult
-from tests.integration.stats.conftest import cleanup_stat_keys
+from tests.integration.stats.conftest import cleanup_stat_keys, seed_auth_users
 
 TEST_USER_A = "00000000-0000-0000-0000-00000000000a"
 TEST_USER_B = "00000000-0000-0000-0000-00000000000b"
@@ -28,12 +28,12 @@ TEST_USER_IDS = [TEST_USER_A, TEST_USER_B, TEST_USER_C]
 
 
 @pytest_asyncio.fixture(autouse=True)
-async def cleanup(redis_client):
-    """Clean up Redis keys before and after each test.
+async def cleanup(redis_client, db_session):
+    """Clean up Redis keys and seed test users before each test.
 
     DB cleanup is handled by transaction rollback in the db_session fixture.
     """
-
+    await seed_auth_users(db_session, TEST_USER_IDS)
     await cleanup_stat_keys(redis_client, TEST_USER_IDS, [TEST_DATE, TEST_DATE_OTHER])
     yield
     await cleanup_stat_keys(redis_client, TEST_USER_IDS, [TEST_DATE, TEST_DATE_OTHER])

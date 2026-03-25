@@ -14,7 +14,7 @@ sudo docker-compose up -d
 ## Test / Formatter
 ```
 # run tests (pytest)
-docker-compose run --rm --entrypoint "" fastapi python -m pytest
+docker-compose run --rm fastapi-test
 
 # code style check & auto-fix (Ruff)
 cd fastapi

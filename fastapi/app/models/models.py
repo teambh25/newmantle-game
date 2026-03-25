@@ -2,7 +2,16 @@ import datetime
 import enum
 import uuid
 
-from sqlalchemy import BigInteger, Date, Enum, Integer, UniqueConstraint, Uuid, func
+from sqlalchemy import (
+    BigInteger,
+    Date,
+    Enum,
+    ForeignKey,
+    Integer,
+    UniqueConstraint,
+    Uuid,
+    func,
+)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -23,7 +32,9 @@ class UserQuizResult(Base):
     )
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-    user_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid, ForeignKey("auth.users.id", ondelete="CASCADE"), nullable=False
+    )
     quiz_date: Mapped[datetime.date] = mapped_column(Date, nullable=False)
     status: Mapped[UserQuizStatus] = mapped_column(
         Enum(UserQuizStatus), nullable=False, default=UserQuizStatus.FAIL

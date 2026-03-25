@@ -8,7 +8,7 @@ PyJWT
 redis
 
 # Supabase (PostgreSQL)
-sqlalchemy[asyncio]
+sqlalchemy[asyncio]>=2.0
 asyncpg
 
 # Test

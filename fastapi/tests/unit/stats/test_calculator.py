@@ -5,14 +5,13 @@ Suites 10, 13-15 from docs/user-stats-test-plan.md.
 
 import datetime
 
-from tests.unit.stats.conftest import make_entry
-
 from app.features.stats.calculator import (
     calc_current_streak,
     calc_max_streak,
     to_calendar_status,
 )
 from app.schemas.stats import CalendarStatus
+from tests.unit.stats.conftest import make_entry
 
 D = datetime.date  # Alias
 

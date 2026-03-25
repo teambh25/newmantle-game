@@ -12,17 +12,6 @@ services:
     command: ["--workers", "2"]
     depends_on:
       - redis 
-  fastapi-test:
-    build:
-      context: ./fastapi
-      target: test
-    volumes:
-      - ./fastapi:/src
-      - ./.env:/src/.env
-    depends_on:
-      - redis
-    profiles:
-      - test
   redis:
     image: redis:alpine
     ports:

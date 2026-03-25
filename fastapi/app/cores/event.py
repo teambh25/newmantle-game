@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app.cores.config import configs
-from app.cores.database import create_db_engine, create_session_factory
+from app.cores.database import create_db_engine, create_session_factory, create_tables
 from app.cores.logging import setup_logging
 from app.cores.redis import create_redis_pool
 
@@ -15,6 +15,7 @@ async def lifespan(app: FastAPI):
     app.state.db_engine = create_db_engine(
         configs.database_url, configs.db_pool_size, configs.db_max_overflow
     )
+    await create_tables(app.state.db_engine)
     app.state.db_session_factory = create_session_factory(app.state.db_engine)
     yield
     await app.state.db_engine.dispose()

@@ -5,6 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
+import app.exceptions as exc
 from app.features.common.redis_keys import RedisStatKeys
 from app.features.common.redis_scripts import (
     RECORD_GIVEUP_SCRIPT,
@@ -28,17 +29,26 @@ class StatRepository:
     async def record_guess(
         self, user_id: str, quiz_date: datetime.date, is_correct: bool
     ) -> None:
-        keys = RedisStatKeys.from_user_and_date(user_id, quiz_date)
-        result = "SUCCESS" if is_correct else "WRONG"
-        await self._guess_script(keys=[keys.key], args=[result, keys.ttl])
+        try:
+            keys = RedisStatKeys.from_user_and_date(user_id, quiz_date)
+            result = "SUCCESS" if is_correct else "WRONG"
+            await self._guess_script(keys=[keys.key], args=[result, keys.ttl])
+        except redis.RedisError as e:
+            raise exc.StatRecordError(f"record_guess failed for {user_id}") from e
 
     async def record_hint(self, user_id: str, quiz_date: datetime.date) -> None:
-        keys = RedisStatKeys.from_user_and_date(user_id, quiz_date)
-        await self._hint_script(keys=[keys.key], args=[keys.ttl])
+        try:
+            keys = RedisStatKeys.from_user_and_date(user_id, quiz_date)
+            await self._hint_script(keys=[keys.key], args=[keys.ttl])
+        except redis.RedisError as e:
+            raise exc.StatRecordError(f"record_hint failed for {user_id}") from e
 
     async def record_giveup(self, user_id: str, quiz_date: datetime.date) -> None:
-        keys = RedisStatKeys.from_user_and_date(user_id, quiz_date)
-        await self._giveup_script(keys=[keys.key], args=[keys.ttl])
+        try:
+            keys = RedisStatKeys.from_user_and_date(user_id, quiz_date)
+            await self._giveup_script(keys=[keys.key], args=[keys.ttl])
+        except redis.RedisError as e:
+            raise exc.StatRecordError(f"record_giveup failed for {user_id}") from e
 
     # --- Redis: query ---
 

@@ -37,10 +37,7 @@ async def guess(
         raise HTTPException(status_code=500, detail="Can't find answer")
 
     if user_id:
-        try:
-            await stat_service.record_guess(user_id, date, resp.correct)
-        except Exception:
-            game_logger.warning(f"v2 | guess | stat recording failed for {user_id}")
+        await stat_service.record_guess(user_id, date, resp.correct)
 
     return resp
 
@@ -64,10 +61,7 @@ async def hint(
         raise HTTPException(status_code=404, detail="Invalid hint request")
 
     if user_id:
-        try:
-            await stat_service.record_hint(user_id, date)
-        except Exception:
-            game_logger.warning(f"v2 | hint | stat recording failed for {user_id}")
+        await stat_service.record_hint(user_id, date)
 
     return resp
 
@@ -93,9 +87,6 @@ async def give_up(
         raise HTTPException(status_code=404, detail="Invalid give up request")
 
     if user_id:
-        try:
-            await stat_service.record_giveup(user_id, date)
-        except Exception:
-            game_logger.warning(f"v2 | give-up | stat recording failed for {user_id}")
+        await stat_service.record_giveup(user_id, date)
 
     return resp

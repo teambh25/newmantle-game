@@ -1,5 +1,7 @@
 import datetime
 
+from loguru import logger
+
 import app.exceptions as exc
 from app.features.common.repository import OutageDateRepository
 from app.features.stats.calculator import (
@@ -30,18 +32,27 @@ class StatService:
         self.outage_repo = outage_repo
         self.today = today
 
-    # --- Recording ---
+    # --- Recording (best-effort: infrastructure failure must not block game responses) ---
 
     async def record_guess(
         self, user_id: str, quiz_date: datetime.date, is_correct: bool
     ) -> None:
-        await self.stat_repo.record_guess(user_id, quiz_date, is_correct)
+        try:
+            await self.stat_repo.record_guess(user_id, quiz_date, is_correct)
+        except exc.StatRecordError:
+            logger.exception(f"stat record_guess failed for {user_id}")
 
     async def record_hint(self, user_id: str, quiz_date: datetime.date) -> None:
-        await self.stat_repo.record_hint(user_id, quiz_date)
+        try:
+            await self.stat_repo.record_hint(user_id, quiz_date)
+        except exc.StatRecordError:
+            logger.exception(f"stat record_hint failed for {user_id}")
 
     async def record_giveup(self, user_id: str, quiz_date: datetime.date) -> None:
-        await self.stat_repo.record_giveup(user_id, quiz_date)
+        try:
+            await self.stat_repo.record_giveup(user_id, quiz_date)
+        except exc.StatRecordError:
+            logger.exception(f"stat record_giveup failed for {user_id}")
 
     # --- Batch ---
 

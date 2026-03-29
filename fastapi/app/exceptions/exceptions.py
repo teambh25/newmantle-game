@@ -60,3 +60,9 @@ class OutageDateNotFound(BaseAppException):
     """Raised when the outage date to delete does not exist."""
 
     pass
+
+
+class StatRecordError(BaseAppException):
+    """Raised when stat recording fails due to infrastructure errors (e.g. Redis)."""
+
+    pass

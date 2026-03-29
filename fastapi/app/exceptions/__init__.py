@@ -7,6 +7,7 @@ from .exceptions import (
     QuizValidationError,
     RankNotFound,
     StatNotFound,
+    StatRecordError,
     WordNotFound,
 )
 from .handlers import authentication_exception_handler, global_exception_handler
@@ -21,6 +22,7 @@ __all__ = [
     "WordNotFound",
     "RankNotFound",
     "StatNotFound",
+    "StatRecordError",
     "authentication_exception_handler",
     "global_exception_handler",
 ]

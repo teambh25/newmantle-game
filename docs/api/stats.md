@@ -134,7 +134,7 @@ GET /v2/stats/550e8400-e29b-41d4-a716-446655440000/2026-03-16
 | 필드          | 타입     | 설명                                        |
 |--------------|----------|---------------------------------------------|
 | `date`        | `date`   | 퀴즈 날짜                                    |
-| `status`      | `string` | `"SUCCESS"`, `"FAIL"`, `"IN_PROGRESS"` 중 하나 |
+| `status`      | `string` | `"SUCCESS"`, `"FAIL"`, `"GIVEUP"` 중 하나 |
 | `guess_count` | `int`    | 총 추측 횟수                                  |
 | `hint_count`  | `int`    | 총 힌트 사용 횟수                              |
 

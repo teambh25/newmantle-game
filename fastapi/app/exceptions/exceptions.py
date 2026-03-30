@@ -66,3 +66,9 @@ class StatRecordError(BaseAppException):
     """Raised when stat recording fails due to infrastructure errors (e.g. Redis)."""
 
     pass
+
+
+class InvalidDateRange(BaseAppException):
+    """Raised when start_date is after end_date."""
+
+    pass

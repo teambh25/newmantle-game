@@ -95,6 +95,7 @@ Authorization: Bearer <token>
 
 | 상태 코드 | 발생 조건                                    | 응답 예시                                |
 |----------|---------------------------------------------|------------------------------------------|
+| `400`    | `start_date`가 `end_date`보다 이후일 때         | `{"detail": "InvalidDateRange: start_date must not be after end_date"}` |
 | `401`    | `Authorization` 헤더가 없거나 토큰이 유효하지 않을 때 | `{"detail": "Authentication failed"}`    |
 | `422`    | `start_date` 또는 `end_date`가 누락되었거나 형식이 잘못되었을 때 | FastAPI 기본 validation error 형식 |
 

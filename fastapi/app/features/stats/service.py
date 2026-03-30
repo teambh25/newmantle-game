@@ -76,6 +76,8 @@ class StatService:
     async def get_overview(
         self, user_id: str, start_date: datetime.date, end_date: datetime.date
     ) -> StatOverviewResp:
+        if start_date > end_date:
+            raise exc.InvalidDateRange("start_date must not be after end_date")
         result_map = await self.stat_repo.fetch_all_results(user_id, end_date)
         outage_dates = set(await self.outage_repo.fetch_all())
 

@@ -22,7 +22,10 @@ async def get_stats_overview(
     stat_service: StatService = Depends(get_stat_service),
     user_id: str = Depends(get_required_user),
 ):
-    return await stat_service.get_overview(user_id, start_date, end_date)
+    try:
+        return await stat_service.get_overview(user_id, start_date, end_date)
+    except exc.InvalidDateRange as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @stats_router.get(

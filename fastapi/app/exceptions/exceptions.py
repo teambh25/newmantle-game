@@ -48,3 +48,27 @@ class DateNotAllowed(BaseAppException):
     such as querying future answers or restricted historical data."""
 
     pass
+
+
+class StatNotFound(BaseAppException):
+    """Raised when no stat record exists for the requested date."""
+
+    pass
+
+
+class OutageDateNotFound(BaseAppException):
+    """Raised when the outage date to delete does not exist."""
+
+    pass
+
+
+class StatRecordError(BaseAppException):
+    """Raised when stat recording fails due to infrastructure errors (e.g. Redis)."""
+
+    pass
+
+
+class InvalidDateRange(BaseAppException):
+    """Raised when start_date is after end_date."""
+
+    pass

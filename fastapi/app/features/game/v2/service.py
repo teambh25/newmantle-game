@@ -3,7 +3,11 @@ import datetime
 import app.exceptions as exc
 import app.schemas as schemas
 import app.utils as utils
-from app.cores.redis import ANSWER_INDICATOR, RedisKeys, RedisQuizData
+from app.features.common.redis_keys import (
+    ANSWER_INDICATOR,
+    RedisQuizData,
+    RedisQuizKeys,
+)
 from app.features.game.repository import GameRepo
 
 
@@ -13,7 +17,7 @@ class GameServiceV2:
         self.today = today
 
     async def guess(self, date: datetime.date, word: str):
-        scores_key = RedisKeys.from_date(date).scores_key
+        scores_key = RedisQuizKeys.from_date(date).scores_key
         score_rank = await self.repo.fetch_score_rank_by_word(scores_key, word)
         if score_rank is None:
             raise exc.WordNotFound(f"date={date}, word={word}")
@@ -26,7 +30,7 @@ class GameServiceV2:
         return resp
 
     async def hint(self, date: datetime.date, rank: int):
-        ranking_key = RedisKeys.from_date(date).ranking_key
+        ranking_key = RedisQuizKeys.from_date(date).ranking_key
         word_score = await self.repo.fetch_word_score_by_rank(ranking_key, rank)
         if word_score is None:
             raise exc.RankNotFound(f"date={date}, rank={rank}")
@@ -45,7 +49,7 @@ class GameServiceV2:
         return answer
 
     async def _get_answer(self, date: datetime.date):
-        answer_key = RedisKeys.from_date(date).answers_key
+        answer_key = RedisQuizKeys.from_date(date).answers_key
         answer = await self.repo.fetch_answer_by_date(answer_key)
         if answer is None:
             raise exc.QuizNotFound("answer not found")

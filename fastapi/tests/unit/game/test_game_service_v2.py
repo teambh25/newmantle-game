@@ -4,7 +4,7 @@ import pytest
 
 import app.exceptions as exc
 import app.schemas as schemas
-from app.cores.redis import ANSWER_INDICATOR
+from app.features.common.redis_keys import ANSWER_INDICATOR
 from app.features.game.repository import GameRepo
 from app.features.game.v2.service import GameServiceV2
 

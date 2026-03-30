@@ -33,10 +33,10 @@ def verify_supabase_jwt(token: str) -> dict:
     try:
         return jwt.decode(
             token,
-            configs.supabase_jwt_secret,
+            configs.jwt_secret,
             algorithms=["HS256"],
             audience="authenticated",
-            issuer=f"{configs.supabase_url}/auth/v1",
+            issuer=f"{configs.jwt_issuer}/auth/v1",
         )
     except jwt.ExpiredSignatureError:
         raise AuthenticationFailed(msg="Token has expired. Please log in again")

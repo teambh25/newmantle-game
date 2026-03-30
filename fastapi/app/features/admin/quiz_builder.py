@@ -2,7 +2,11 @@ from typing import List, Tuple
 
 import app.schemas as schemas
 import app.utils as utils
-from app.cores.redis import ANSWER_INDICATOR, RedisKeys, RedisQuizData
+from app.features.common.redis_keys import (
+    ANSWER_INDICATOR,
+    RedisQuizData,
+    RedisQuizKeys,
+)
 
 
 class QuizBuilder:
@@ -10,7 +14,7 @@ class QuizBuilder:
         self.max_rank = max_rank
 
     def build_redis_quiz(self, quiz: schemas.Quiz):
-        redis_keys = RedisKeys.from_date(quiz.date)
+        redis_keys = RedisQuizKeys.from_date(quiz.date)
         ans_json_str = quiz.answer.model_dump_json()
         sorted_scores = sorted(quiz.scores.items(), key=lambda x: x[1], reverse=True)
         scores_map = self._get_scores_map(sorted_scores, quiz.answer.word)

@@ -8,11 +8,15 @@ class Configs(BaseSettings):
     admin_pw: str
     max_rank: int
     redis_url: str
-    max_connection: int
+    redis_max_conn: int
     allowed_origins: List[str] = []
     allowed_origin_regex: str = ""
-    supabase_jwt_secret: str
-    supabase_url: str
+    jwt_secret: str
+    jwt_issuer: str
+    database_url: str
+    test_database_url: str = ""
+    db_pool_size: int
+    db_max_overflow: int
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 

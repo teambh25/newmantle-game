@@ -1,6 +1,6 @@
 import redis.asyncio as redis
 
-from app.cores.redis import RedisKeys, RedisQuizData
+from app.features.common.redis_keys import RedisQuizData, RedisQuizKeys
 
 
 class AdminRepo:
@@ -14,15 +14,32 @@ class AdminRepo:
             pipe.expireat(quiz.keys.scores_key, quiz.expire_at)
             pipe.hset(quiz.keys.ranking_key, mapping=quiz.ranking_map)
             pipe.expireat(quiz.keys.ranking_key, quiz.expire_at)
+            pipe.sadd("quiz:index", quiz.keys.answers_key)
             await pipe.execute()
 
     async def fetch_all_answers(self):
-        answer_keys = await self.rd.keys("*answers")
+        answer_keys = list(await self.rd.smembers("quiz:index"))
+        if not answer_keys:
+            return [], []
         answers = await self.rd.mget(answer_keys)
-        return answer_keys, answers
 
-    async def delete_quiz(self, keys: RedisKeys):
-        deleted_cnt = await self.rd.delete(
-            keys.answers_key, keys.scores_key, keys.ranking_key
-        )
-        return deleted_cnt
+        # Lazy cleanup: remove stale keys where TTL has expired
+        live_keys, live_answers = [], []
+        stale_keys = []
+        for key, ans in zip(answer_keys, answers):
+            if ans is not None:
+                live_keys.append(key)
+                live_answers.append(ans)
+            else:
+                stale_keys.append(key)
+        if stale_keys:
+            await self.rd.srem("quiz:index", *stale_keys)
+
+        return live_keys, live_answers
+
+    async def delete_quiz(self, keys: RedisQuizKeys):
+        async with self.rd.pipeline(transaction=True) as pipe:
+            pipe.delete(keys.answers_key, keys.scores_key, keys.ranking_key)
+            pipe.srem("quiz:index", keys.answers_key)
+            results = await pipe.execute()
+        return results[0]

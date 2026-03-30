@@ -1,7 +1,7 @@
 import datetime
 
-from app.cores.redis import ANSWER_INDICATOR
 from app.features.admin.quiz_builder import QuizBuilder
+from app.features.common.redis_keys import ANSWER_INDICATOR
 
 
 def test_build_redis_quiz_success(quiz_factory, tomorrow):

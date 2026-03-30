@@ -6,8 +6,9 @@ from loguru import logger
 import app.exceptions as exc
 import app.schemas as schemas
 from app.cores.auth import authenticate_admin
-from app.dependencies import get_admin_service
+from app.dependencies import get_admin_service, get_stat_service
 from app.features.admin.service import AdminService
+from app.features.stats.service import StatService
 
 admin_router = APIRouter(
     prefix="/admin",
@@ -55,3 +56,65 @@ async def delete_answer(
         logger.error(str(e))
         raise HTTPException(status_code=500, detail=e.msg)
     logger.success(f"quiz deleted: {date}")
+
+
+@admin_router.get(
+    "/outage-dates",
+    status_code=status.HTTP_200_OK,
+    response_model=schemas.OutageDateListResp,
+)
+async def get_outage_dates(
+    admin_service: AdminService = Depends(get_admin_service),
+):
+    dates = await admin_service.get_outage_dates()
+    return schemas.OutageDateListResp(outage_dates=dates)
+
+
+@admin_router.post(
+    "/outage-dates",
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_outage_date(
+    body: schemas.OutageDateRequest,
+    admin_service: AdminService = Depends(get_admin_service),
+):
+    await admin_service.create_outage_date(body.date)
+    logger.success(f"outage date created: {body.date}")
+    return {"date": body.date}
+
+
+@admin_router.delete(
+    "/outage-dates/{date}",
+    status_code=status.HTTP_200_OK,
+)
+async def delete_outage_date(
+    date: datetime.date,
+    admin_service: AdminService = Depends(get_admin_service),
+):
+    try:
+        await admin_service.delete_outage_date(date)
+    except exc.OutageDateNotFound as e:
+        logger.error(str(e))
+        raise HTTPException(status_code=404, detail=e.msg)
+    logger.success(f"outage date deleted: {date}")
+    return {"date": date}
+
+
+@admin_router.post(
+    "/stats/flush",
+    status_code=status.HTTP_200_OK,
+    response_model=schemas.FlushResponse,
+)
+async def flush_stats(
+    body: schemas.FlushRequest,
+    stat_service: StatService = Depends(get_stat_service),
+):
+    flushed_count, skipped_count = await stat_service.flush_to_db(body.date)
+    logger.success(
+        f"stats flushed: date={body.date}, flushed={flushed_count}, skipped={skipped_count}"
+    )
+    return schemas.FlushResponse(
+        date=body.date,
+        flushed_count=flushed_count,
+        skipped_count=skipped_count,
+    )

@@ -1,22 +1,30 @@
 from .exceptions import (
     AuthenticationFailed,
     DateNotAllowed,
+    InvalidDateRange,
+    OutageDateNotFound,
     QuizInconsistentError,
     QuizNotFound,
     QuizValidationError,
     RankNotFound,
+    StatNotFound,
+    StatRecordError,
     WordNotFound,
 )
 from .handlers import authentication_exception_handler, global_exception_handler
 
 __all__ = [
     "AuthenticationFailed",
+    "DateNotAllowed",
+    "InvalidDateRange",
+    "OutageDateNotFound",
     "QuizNotFound",
-    "authentication_exception_handler",
-    "global_exception_handler",
     "QuizValidationError",
     "QuizInconsistentError",
     "WordNotFound",
     "RankNotFound",
-    "DateNotAllowed",
+    "StatNotFound",
+    "StatRecordError",
+    "authentication_exception_handler",
+    "global_exception_handler",
 ]

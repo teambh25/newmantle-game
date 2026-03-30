@@ -3,7 +3,7 @@ services:
   fastapi:
     build:
       context: ./fastapi
-      dockerfile: Dockerfile
+      target: prod
     ports:
       - "8080:5000"
     volumes:

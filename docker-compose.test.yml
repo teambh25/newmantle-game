@@ -1,0 +1,28 @@
+version: '3'
+services:
+  fastapi-test:
+    build:
+      context: ./fastapi
+      target: test
+    volumes:
+      - ./fastapi:/src
+      - ./.env:/src/.env
+    depends_on:
+      - redis
+      - postgres-test
+  postgres-test:
+    image: postgres:alpine
+    environment:
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: test_db
+    ports:
+      - "5433:5432"
+  redis:
+    image: redis:alpine
+    ports:
+      - 6379:6379
+    volumes:
+      - ./redis/data:/data
+      - ./redis/conf/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    command: redis-server /usr/local/etc/redis/redis.conf

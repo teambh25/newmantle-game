@@ -3,7 +3,7 @@ import datetime
 import pytest
 
 import app.exceptions as exc
-from app.cores.redis import ANSWER_INDICATOR, RedisKeys
+from app.features.common.redis_keys import ANSWER_INDICATOR, RedisQuizKeys
 from app.features.game.repository import GameRepo
 from app.features.game.v1.service import GameServiceV1
 
@@ -28,17 +28,17 @@ def test_date():
 
 @pytest.fixture
 def expected_answers_key(test_date):
-    return RedisKeys.from_date(test_date).answers_key
+    return RedisQuizKeys.from_date(test_date).answers_key
 
 
 @pytest.fixture
 def expected_scores_key(test_date):
-    return RedisKeys.from_date(test_date).scores_key
+    return RedisQuizKeys.from_date(test_date).scores_key
 
 
 @pytest.fixture
 def expected_ranking_key(test_date):
-    return RedisKeys.from_date(test_date).ranking_key
+    return RedisQuizKeys.from_date(test_date).ranking_key
 
 
 @pytest.mark.asyncio

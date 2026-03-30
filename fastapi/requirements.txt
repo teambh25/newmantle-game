@@ -7,10 +7,6 @@ PyJWT
 # Redis
 redis
 
-# Test
-httpx
-pytest
-pytest-mock
-pytest-cov
-pytest-asyncio
-flake8
+# Supabase (PostgreSQL)
+sqlalchemy[asyncio]>=2.0
+asyncpg

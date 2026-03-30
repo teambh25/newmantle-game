@@ -23,11 +23,10 @@ class GameServiceV2:
             raise exc.WordNotFound(f"date={date}, word={word}")
         if score_rank == ANSWER_INDICATOR:
             answer = await self._get_answer(date)
-            resp = {"correct": True, "score": None, "rank": None, "answer": answer}
+            return True, None, None, answer
         else:
             score, rank = RedisQuizData.deserialize_score_and_rank(score_rank)
-            resp = {"correct": False, "score": score, "rank": rank, "answer": None}
-        return resp
+            return False, score, rank, None
 
     async def hint(self, date: datetime.date, rank: int):
         ranking_key = RedisQuizKeys.from_date(date).ranking_key
@@ -35,18 +34,15 @@ class GameServiceV2:
         if word_score is None:
             raise exc.RankNotFound(f"date={date}, rank={rank}")
         if rank == 0:
-            initial_consonant = word_score
-            resp = {"hint": initial_consonant, "score": None}
+            return word_score, None
         else:
             word, score = RedisQuizData.deserialize_word_and_score(word_score)
-            resp = {"hint": word, "score": score}
-        return resp
+            return word, score
 
     async def give_up(self, date: datetime.date):
         if utils.is_future(date, self.today):
             raise exc.DateNotAllowed(f"date={date}")
-        answer = await self._get_answer(date)
-        return answer
+        return await self._get_answer(date)
 
     async def _get_answer(self, date: datetime.date):
         answer_key = RedisQuizKeys.from_date(date).answers_key

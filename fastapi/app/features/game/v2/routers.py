@@ -28,7 +28,7 @@ async def guess(
     user_id: str | None = Depends(get_optional_user),
 ):
     try:
-        resp = await game_service.guess(date, word)
+        correct, score, rank, answer = await game_service.guess(date, word)
     except exc.WordNotFound as e:
         game_logger.info(f"v2 | guess | {e.msg}")
         raise HTTPException(status_code=404, detail="Invalid guess request")
@@ -36,8 +36,8 @@ async def guess(
         game_logger.info(f"v2 | guess | {e.msg}")
         raise HTTPException(status_code=500, detail="Can't find answer")
 
-    await stat_service.record_guess(user_id, date, resp.correct)
-    return resp
+    await stat_service.record_guess(user_id, date, correct)
+    return schemas.GuessResp(correct=correct, score=score, rank=rank, answer=answer)
 
 
 @game_router_v2.get(
@@ -53,13 +53,13 @@ async def hint(
     user_id: str | None = Depends(get_optional_user),
 ):
     try:
-        resp = await game_service.hint(date, rank)
+        hint_word, score = await game_service.hint(date, rank)
     except exc.RankNotFound as e:
         game_logger.info(f"v2 | hint | {e.msg}")
         raise HTTPException(status_code=404, detail="Invalid hint request")
 
     await stat_service.record_hint(user_id, date)
-    return resp
+    return schemas.HintResp(hint=hint_word, score=score)
 
 
 @game_router_v2.get(
@@ -74,7 +74,7 @@ async def give_up(
     user_id: str | None = Depends(get_optional_user),
 ):
     try:
-        resp = await game_service.give_up(date)
+        answer = await game_service.give_up(date)
     except exc.DateNotAllowed as e:
         game_logger.info(f"v2 | give up | {e.msg}")
         raise HTTPException(status_code=422, detail="Invalid give up request")
@@ -83,4 +83,4 @@ async def give_up(
         raise HTTPException(status_code=404, detail="Invalid give up request")
 
     await stat_service.record_giveup(user_id, date)
-    return resp
+    return schemas.GiveUpResp(**answer.model_dump())

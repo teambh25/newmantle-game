@@ -40,13 +40,8 @@ async def test_guess_sucess_with_answer(
     mock_game_repo.fetch_score_rank_by_word.return_value = ANSWER_INDICATOR
     mock_game_repo.fetch_answer_by_date.return_value = mock_answer.model_dump_json()
 
-    result = await game_service.guess(today, mock_answer.word)
-    assert result == {
-        "correct": True,
-        "score": None,
-        "rank": None,
-        "answer": mock_answer,
-    }
+    correct, score, rank, answer = await game_service.guess(today, mock_answer.word)
+    assert (correct, score, rank, answer) == (True, None, None, mock_answer)
 
 
 @pytest.mark.asyncio
@@ -58,9 +53,9 @@ async def test_guess_sucess_with_non_answer(game_service, mock_game_repo, today)
     mock_score_rank = "95.5|120"  # score|rank
     mock_game_repo.fetch_score_rank_by_word.return_value = mock_score_rank
 
-    result = await game_service.guess(today, non_answer)
+    correct, score, rank, answer = await game_service.guess(today, non_answer)
 
-    assert result == {"correct": False, "score": 95.5, "rank": 120, "answer": None}
+    assert (correct, score, rank, answer) == (False, 95.5, 120, None)
 
 
 @pytest.mark.asyncio
@@ -84,9 +79,9 @@ async def test_hint_success_with_answer(game_service, mock_game_repo, today):
     initial_consonant = "ㅈㄷ"  # 정답 단어 : 정답
     mock_game_repo.fetch_word_score_by_rank.return_value = initial_consonant
 
-    result = await game_service.hint(today, answer_rank)
+    hint_word, score = await game_service.hint(today, answer_rank)
 
-    assert result == {"hint": initial_consonant, "score": None}
+    assert (hint_word, score) == (initial_consonant, None)
 
 
 @pytest.mark.asyncio
@@ -98,9 +93,9 @@ async def test_hint_success_with_non_answer(game_service, mock_game_repo, today)
     word_score = "사과|98.7"  # word|score
     mock_game_repo.fetch_word_score_by_rank.return_value = word_score
 
-    result = await game_service.hint(today, mock_rank)
+    hint_word, score = await game_service.hint(today, mock_rank)
 
-    assert result == {"hint": "사과", "score": 98.7}
+    assert (hint_word, score) == ("사과", 98.7)
 
 
 @pytest.mark.asyncio

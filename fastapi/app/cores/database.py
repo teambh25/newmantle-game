@@ -8,6 +8,7 @@ def create_db_engine(db_url: str, pool_size: int, max_overflow: int) -> AsyncEng
         max_overflow=max_overflow,
         pool_pre_ping=True,
         pool_recycle=300,
+        pool_timeout=10,
     )
 
 

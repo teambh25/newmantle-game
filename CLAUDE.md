@@ -13,13 +13,13 @@ Korean word guessing game API (similar to Semantle). FastAPI backend with Redis 
 sudo docker-compose up -d
 
 # Run tests
-docker-compose run --rm --entrypoint "" fastapi python -m pytest
+docker compose -f docker-compose.test.yml run --rm fastapi-test
 
 # Lint & format (from fastapi/ directory)
 cd fastapi && ruff check --fix && ruff format
 
 # Run a single test
-docker-compose run --rm --entrypoint "" fastapi python -m pytest tests/unit/game/test_service.py -v
+docker compose -f docker-compose.test.yml run --rm fastapi-test tests/unit/game/test_service.py -v
 ```
 
 ## Architecture

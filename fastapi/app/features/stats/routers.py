@@ -1,4 +1,5 @@
 import datetime
+import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
@@ -34,7 +35,7 @@ async def get_stats_overview(
     response_model=StatDailyResp,
 )
 async def get_stats_daily(
-    user_id: str,
+    user_id: uuid.UUID,
     date: datetime.date,
     stat_service: StatService = Depends(get_stat_service),
 ):

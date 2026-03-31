@@ -1,4 +1,5 @@
 import datetime
+import uuid
 
 from loguru import logger
 
@@ -86,8 +87,8 @@ class StatService:
 
         return StatOverviewResp(calendar=calendar, summary=summary)
 
-    async def get_daily(self, user_id: str, quiz_date: datetime.date) -> StatDailyResp:
-        stat = await self.stat_repo.fetch_stat(user_id, quiz_date)
+    async def get_daily(self, user_id: uuid.UUID, quiz_date: datetime.date) -> StatDailyResp:
+        stat = await self.stat_repo.fetch_stat(str(user_id), quiz_date)
         if stat is None:
             raise exc.StatNotFound(f"No stat found for {quiz_date}")
         return StatDailyResp(

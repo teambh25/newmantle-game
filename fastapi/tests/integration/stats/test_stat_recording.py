@@ -1,7 +1,4 @@
-"""Integration tests for stat recording via StatRepository.
-
-Suites 1-3, 5-6 from docs/user-stats/test-plan.md.
-"""
+"""Integration tests for stat recording via StatRepository."""
 
 import datetime
 
@@ -66,11 +63,6 @@ async def assert_stat(
         )
 
 
-# ---------------------------------------------------------------------------
-# Suite 1: Guess Script State Transitions
-# ---------------------------------------------------------------------------
-
-
 class TestGuessScript:
     @pytest.mark.asyncio
     async def test_first_wrong_guess(self, redis_repo, redis_client):
@@ -123,11 +115,6 @@ class TestGuessScript:
         )
 
 
-# ---------------------------------------------------------------------------
-# Suite 2: Hint Script State Transitions
-# ---------------------------------------------------------------------------
-
-
 class TestHintScript:
     @pytest.mark.asyncio
     async def test_first_hint_no_prior_state(self, redis_repo, redis_client):
@@ -161,11 +148,6 @@ class TestHintScript:
         )
 
 
-# ---------------------------------------------------------------------------
-# Suite 3: Giveup Script State Transitions
-# ---------------------------------------------------------------------------
-
-
 class TestGiveupScript:
     @pytest.mark.asyncio
     async def test_giveup_during_game(self, redis_repo, redis_client):
@@ -191,11 +173,6 @@ class TestGiveupScript:
         await redis_repo.record_giveup(TEST_USER_A, TEST_DATE)
         await redis_repo.record_giveup(TEST_USER_A, TEST_DATE)
         await assert_stat(redis_client, TEST_USER_A, TEST_DATE, status="GIVEUP")
-
-
-# ---------------------------------------------------------------------------
-# Suite 5: Composite Game Flow Scenarios
-# ---------------------------------------------------------------------------
 
 
 class TestCompositeScenarios:
@@ -231,11 +208,6 @@ class TestCompositeScenarios:
         await assert_stat(
             redis_client, TEST_USER_A, TEST_DATE, status="GIVEUP", guesses=1
         )
-
-
-# ---------------------------------------------------------------------------
-# Suite 6: Redis Key Pattern & Isolation
-# ---------------------------------------------------------------------------
 
 
 class TestStatIsolation:

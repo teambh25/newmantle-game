@@ -1,6 +1,5 @@
 """Integration tests for StatRepository query methods.
 
-Suites 13-14 from docs/user-stats/test-plan.md.
 Data is prepared via direct hset (not record methods) to test parsing independently.
 """
 
@@ -15,11 +14,6 @@ from tests.integration.stats.conftest import cleanup_stat_keys
 
 TEST_USER_A = "00000000-0000-0000-0000-00000000000a"
 TEST_DATE = datetime.date(2026, 3, 12)
-
-# ---------------------------------------------------------------------------
-# Suite 13: fetch_stat
-# ---------------------------------------------------------------------------
-
 
 class TestFetchStat:
     @pytest_asyncio.fixture(autouse=True)
@@ -83,10 +77,6 @@ class TestFetchStat:
 
         assert result == QuizResultEntry(status="GIVEUP", guess_count=0, hint_count=0)
 
-
-# ---------------------------------------------------------------------------
-# Suite 14: fetch_recent_stats
-# ---------------------------------------------------------------------------
 
 DAYS = 3
 

@@ -1,7 +1,4 @@
-"""Unit tests for features/stats/calculator.py
-
-Suites 10, 13-15 from docs/user-stats-test-plan.md.
-"""
+"""Unit tests for features/stats/calculator.py"""
 
 import datetime
 
@@ -14,11 +11,6 @@ from app.schemas.stats import CalendarStatus
 from tests.unit.stats.conftest import make_entry
 
 D = datetime.date  # Alias
-
-# ---------------------------------------------------------------------------
-# Suite 10: to_calendar_status
-# ---------------------------------------------------------------------------
-
 
 class TestToCalendarStatus:
     def test_success_without_hint(self):
@@ -42,9 +34,7 @@ class TestToCalendarStatus:
         assert to_calendar_status("SUCCESS", 0, True) == CalendarStatus.OUTAGE
 
 
-# ---------------------------------------------------------------------------
-# Suite 11: calc_current_streak
-# ---------------------------------------------------------------------------
+
 
 
 class TestCalcCurrentStreak:
@@ -133,9 +123,7 @@ class TestCalcCurrentStreak:
         assert calc_current_streak(result_map, set(), D(2026, 3, 13)) == 3
 
 
-# ---------------------------------------------------------------------------
-# Suite 12: calc_max_streak
-# ---------------------------------------------------------------------------
+
 
 
 class TestCalcMaxStreak:

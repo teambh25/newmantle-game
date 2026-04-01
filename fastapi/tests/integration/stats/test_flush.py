@@ -1,6 +1,5 @@
 """Integration tests for StatRepository.flush_stats.
 
-Suite 15 from docs/user-stats/test-plan.md.
 Data is prepared via direct hset, then flushed to real PostgreSQL.
 """
 
@@ -54,11 +53,6 @@ async def _fetch_db_row(db_session, user_id, quiz_date) -> UserQuizResult | None
         )
     )
     return result.scalar_one_or_none()
-
-
-# ---------------------------------------------------------------------------
-# Suite 15: flush basic operations
-# ---------------------------------------------------------------------------
 
 
 class TestFlushBasic:

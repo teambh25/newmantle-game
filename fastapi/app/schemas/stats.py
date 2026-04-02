@@ -1,4 +1,5 @@
 import datetime
+import uuid
 from enum import StrEnum
 
 from pydantic import BaseModel
@@ -29,8 +30,17 @@ class StatOverviewResp(BaseModel):
     summary: StatSummary
 
 
+class UserType(StrEnum):
+    USER = "user"
+    GUEST = "guest"
+
+
 class StatDailyResp(BaseModel):
     date: datetime.date
     status: str
     guess_count: int
     hint_count: int
+
+
+class StatLinkReq(BaseModel):
+    guest_id: uuid.UUID

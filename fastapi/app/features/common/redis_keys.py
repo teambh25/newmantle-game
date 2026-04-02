@@ -62,3 +62,7 @@ class RedisStatKeys:
     @classmethod
     def from_user_and_date(cls, user_id: str, date: datetime.date):
         return cls(key=f"user:{user_id}:quiz:{date}:stat")
+
+    @classmethod
+    def from_guest_and_date(cls, guest_id: str, date: datetime.date):
+        return cls(key=f"guest:{guest_id}:quiz:{date}:stat")

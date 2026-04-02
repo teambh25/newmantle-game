@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import app.exceptions as exc
 from app.features.common.redis_keys import RedisStatKeys
 from app.features.common.redis_scripts import (
+    LINK_GUEST_STAT_SCRIPT,
     RECORD_GIVEUP_SCRIPT,
     RECORD_GUESS_SCRIPT,
     RECORD_HINT_SCRIPT,
@@ -23,40 +24,58 @@ class StatRepository:
         self._guess_script = self.redis.register_script(RECORD_GUESS_SCRIPT)
         self._hint_script = self.redis.register_script(RECORD_HINT_SCRIPT)
         self._giveup_script = self.redis.register_script(RECORD_GIVEUP_SCRIPT)
+        self._link_guest_stat_script = self.redis.register_script(
+            LINK_GUEST_STAT_SCRIPT
+        )
+
+    def _resolve_keys(
+        self, subject_id: str, is_guest: bool, date: datetime.date
+    ) -> RedisStatKeys:
+        if is_guest:
+            return RedisStatKeys.from_guest_and_date(subject_id, date)
+        return RedisStatKeys.from_user_and_date(subject_id, date)
 
     # --- Redis: recording ---
 
     async def record_guess(
-        self, user_id: str, quiz_date: datetime.date, is_correct: bool
+        self,
+        subject_id: str,
+        is_guest: bool,
+        quiz_date: datetime.date,
+        is_correct: bool,
     ) -> None:
         try:
-            keys = RedisStatKeys.from_user_and_date(user_id, quiz_date)
+            keys = self._resolve_keys(subject_id, is_guest, quiz_date)
             result = "SUCCESS" if is_correct else "WRONG"
             await self._guess_script(keys=[keys.key], args=[result, keys.ttl])
         except redis.RedisError as e:
-            raise exc.StatRecordError(f"record_guess failed for {user_id}") from e
+            raise exc.StatRecordError(f"record_guess failed for {subject_id}") from e
 
-    async def record_hint(self, user_id: str, quiz_date: datetime.date) -> None:
+    async def record_hint(
+        self, subject_id: str, is_guest: bool, quiz_date: datetime.date
+    ) -> None:
         try:
-            keys = RedisStatKeys.from_user_and_date(user_id, quiz_date)
+            keys = self._resolve_keys(subject_id, is_guest, quiz_date)
             await self._hint_script(keys=[keys.key], args=[keys.ttl])
         except redis.RedisError as e:
-            raise exc.StatRecordError(f"record_hint failed for {user_id}") from e
+            raise exc.StatRecordError(f"record_hint failed for {subject_id}") from e
 
-    async def record_giveup(self, user_id: str, quiz_date: datetime.date) -> None:
+    async def record_giveup(
+        self, subject_id: str, is_guest: bool, quiz_date: datetime.date
+    ) -> None:
         try:
-            keys = RedisStatKeys.from_user_and_date(user_id, quiz_date)
+            keys = self._resolve_keys(subject_id, is_guest, quiz_date)
             await self._giveup_script(keys=[keys.key], args=[keys.ttl])
         except redis.RedisError as e:
-            raise exc.StatRecordError(f"record_giveup failed for {user_id}") from e
+            raise exc.StatRecordError(f"record_giveup failed for {subject_id}") from e
 
     # --- Redis: query ---
 
     async def fetch_stat(
-        self, user_id: str, quiz_date: datetime.date
+        self, subject_id: str, is_guest: bool, quiz_date: datetime.date
     ) -> QuizResultEntry | None:
         """Get a single date's stat from Redis Hash. Returns None if no data."""
-        keys = RedisStatKeys.from_user_and_date(user_id, quiz_date)
+        keys = self._resolve_keys(subject_id, is_guest, quiz_date)
         data = await self.redis.hgetall(keys.key)
         if not data:
             return None
@@ -210,3 +229,23 @@ class StatRepository:
         )
         await self.session.execute(stmt)
         await self.session.commit()
+
+    # --- Guest: stat migration ---
+
+    async def link_guest_stats(
+        self, user_id: str, guest_id: str, today: datetime.date
+    ) -> None:
+        """Migrate guest stat keys to user keys for the TTL window.
+
+        For each date in the TTL window:
+        - If guest key absent: skip.
+        - If user key already exists: delete guest key to prevent future conflicts.
+        - Otherwise: rename guest key to user key.
+
+        Each per-date migration is atomic via a Lua script to avoid TOCTOU races.
+        """
+        for i in range(RedisStatKeys.TTL_DAYS):
+            date = today - datetime.timedelta(days=i)
+            guest_key = RedisStatKeys.from_guest_and_date(guest_id, date).key
+            user_key = RedisStatKeys.from_user_and_date(user_id, date).key
+            await self._link_guest_stat_script(keys=[guest_key, user_key])

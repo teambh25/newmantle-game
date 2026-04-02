@@ -49,3 +49,20 @@ redis.call('HSET', KEYS[1], 'status', 'GIVEUP')
 redis.call('EXPIRE', KEYS[1], ARGV[1])
 return 1
 """
+
+# Lua script for atomic guest-to-user stat key migration.
+# KEYS[1] = guest key, KEYS[2] = user key
+# Returns 0 if guest key absent (skip),
+#         1 if user key already exists (guest key deleted),
+#         2 if renamed successfully
+LINK_GUEST_STAT_SCRIPT = """
+if redis.call('EXISTS', KEYS[1]) == 0 then
+    return 0
+end
+if redis.call('EXISTS', KEYS[2]) == 1 then
+    redis.call('DEL', KEYS[1])
+    return 1
+end
+redis.call('RENAME', KEYS[1], KEYS[2])
+return 2
+"""

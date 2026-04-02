@@ -12,6 +12,7 @@ from tests.unit.stats.conftest import make_entry
 
 D = datetime.date  # Alias
 
+
 class TestToCalendarStatus:
     def test_success_without_hint(self):
         assert (
@@ -32,9 +33,6 @@ class TestToCalendarStatus:
 
     def test_outage_overrides_success(self):
         assert to_calendar_status("SUCCESS", 0, True) == CalendarStatus.OUTAGE
-
-
-
 
 
 class TestCalcCurrentStreak:
@@ -121,9 +119,6 @@ class TestCalcCurrentStreak:
             D(2026, 3, 13): make_entry("SUCCESS"),
         }
         assert calc_current_streak(result_map, set(), D(2026, 3, 13)) == 3
-
-
-
 
 
 class TestCalcMaxStreak:

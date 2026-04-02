@@ -2,14 +2,19 @@
 
 Base URL: `/v2`
 
-인증은 **선택사항**입니다. `Authorization: Bearer <token>` 헤더가 있으면 유저를 식별하여 통계를 기록하고, 없어도 게임 플레이는 정상 동작합니다.
+인증은 **필수**입니다. 아래 중 하나의 헤더를 포함해야 합니다. 둘 다 없거나 둘 다 있으면 `401`을 반환합니다.
+
+| 헤더 | 설명 |
+|------|------|
+| `Authorization: Bearer <token>` | 회원 (Supabase JWT) |
+| `X-Guest-Id: <uuid>` | 게스트 (클라이언트 생성 UUID v4) |
 
 ---
 
 ## 1. GET `/v2/quizzes/{date}/guess/{word}` - 단어 추측
 
 입력한 단어의 유사도 점수와 순위를 반환합니다. 정답일 경우 정답 정보를 함께 반환합니다.
-로그인 상태라면 추측 기록이 통계에 반영됩니다.
+추측 기록은 통계에 반영됩니다.
 
 ### 요청
 
@@ -20,7 +25,14 @@ Base URL: `/v2`
 
 ```
 GET /v2/quizzes/2026-03-16/guess/사과
-Authorization: Bearer <token>  (선택)
+Authorization: Bearer <token>
+```
+
+또는
+
+```
+GET /v2/quizzes/2026-03-16/guess/사과
+X-Guest-Id: a1b2c3d4-e5f6-7890-abcd-ef1234567890
 ```
 
 ### 응답 `200 OK`
@@ -74,6 +86,7 @@ Authorization: Bearer <token>  (선택)
 
 | 상태 코드 | 발생 조건                                    | 응답 예시                                    |
 |----------|---------------------------------------------|----------------------------------------------|
+| `401`    | 인증 헤더가 없거나 유효하지 않을 때                 | `{"detail": "Authentication failed"}`        |
 | `404`    | 추측한 단어가 퀴즈 데이터에 존재하지 않을 때        | `{"detail": "Invalid guess request"}`        |
 | `500`    | 정답 데이터를 서버에서 찾을 수 없을 때 (서버 오류)   | `{"detail": "Can't find answer"}`            |
 | `422`    | path 파라미터 형식이 잘못되었을 때                 | FastAPI 기본 validation error 형식            |
@@ -83,7 +96,7 @@ Authorization: Bearer <token>  (선택)
 ## 2. GET `/v2/quizzes/{date}/hint/{rank}` - 힌트 조회
 
 특정 순위의 단어를 힌트로 반환합니다. `rank=0`일 경우 정답의 초성을 반환합니다.
-로그인 상태라면 힌트 사용 기록이 통계에 반영됩니다.
+힌트 사용 기록은 통계에 반영됩니다.
 
 ### 요청
 
@@ -94,7 +107,14 @@ Authorization: Bearer <token>  (선택)
 
 ```
 GET /v2/quizzes/2026-03-16/hint/1
-Authorization: Bearer <token>  (선택)
+Authorization: Bearer <token>
+```
+
+또는
+
+```
+GET /v2/quizzes/2026-03-16/hint/1
+X-Guest-Id: a1b2c3d4-e5f6-7890-abcd-ef1234567890
 ```
 
 ### 응답 `200 OK`
@@ -130,6 +150,7 @@ Authorization: Bearer <token>  (선택)
 
 | 상태 코드 | 발생 조건                                    | 응답 예시                                    |
 |----------|---------------------------------------------|----------------------------------------------|
+| `401`    | 인증 헤더가 없거나 유효하지 않을 때                 | `{"detail": "Authentication failed"}`        |
 | `404`    | 해당 순위에 데이터가 존재하지 않을 때              | `{"detail": "Invalid hint request"}`         |
 | `422`    | `rank`가 범위를 벗어나거나 형식이 잘못되었을 때     | FastAPI 기본 validation error 형식            |
 
@@ -138,7 +159,7 @@ Authorization: Bearer <token>  (선택)
 ## 3. GET `/v2/quizzes/{date}/give-up` - 포기
 
 정답 정보를 반환합니다. 미래 날짜에 대해서는 포기할 수 없습니다.
-로그인 상태라면 포기 기록이 통계에 반영됩니다.
+포기 기록은 통계에 반영됩니다.
 
 ### 요청
 
@@ -148,7 +169,14 @@ Authorization: Bearer <token>  (선택)
 
 ```
 GET /v2/quizzes/2026-03-16/give-up
-Authorization: Bearer <token>  (선택)
+Authorization: Bearer <token>
+```
+
+또는
+
+```
+GET /v2/quizzes/2026-03-16/give-up
+X-Guest-Id: a1b2c3d4-e5f6-7890-abcd-ef1234567890
 ```
 
 ### 응답 `200 OK`
@@ -175,6 +203,7 @@ Authorization: Bearer <token>  (선택)
 
 | 상태 코드 | 발생 조건                                    | 응답 예시                                    |
 |----------|---------------------------------------------|----------------------------------------------|
+| `401`    | 인증 헤더가 없거나 유효하지 않을 때                 | `{"detail": "Authentication failed"}`        |
 | `422`    | 미래 날짜를 요청했을 때                          | `{"detail": "Invalid give up request"}`      |
 | `404`    | 해당 날짜의 정답 데이터가 존재하지 않을 때          | `{"detail": "Invalid give up request"}`      |
 | `422`    | path 파라미터 형식이 잘못되었을 때                 | FastAPI 기본 validation error 형식            |

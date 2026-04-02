@@ -10,17 +10,18 @@ import pytest_asyncio
 
 from app.features.common.redis_keys import RedisStatKeys
 from app.features.stats.dto import QuizResultEntry
-from tests.integration.stats.conftest import cleanup_stat_keys
+from tests.integration.stats.conftest import cleanup_user_stat_keys
 
 TEST_USER_A = "00000000-0000-0000-0000-00000000000a"
 TEST_DATE = datetime.date(2026, 3, 12)
 
+
 class TestFetchStat:
     @pytest_asyncio.fixture(autouse=True)
     async def cleanup_keys(self, redis_client):
-        await cleanup_stat_keys(redis_client, [TEST_USER_A], [TEST_DATE])
+        await cleanup_user_stat_keys(redis_client, [TEST_USER_A], [TEST_DATE])
         yield
-        await cleanup_stat_keys(redis_client, [TEST_USER_A], [TEST_DATE])
+        await cleanup_user_stat_keys(redis_client, [TEST_USER_A], [TEST_DATE])
 
     @pytest.mark.asyncio
     async def test_full_fields(self, redis_repo, redis_client):
@@ -29,7 +30,7 @@ class TestFetchStat:
             key, mapping={"status": "FAIL", "guesses": "2", "hints": "1"}
         )
 
-        result = await redis_repo.fetch_stat(TEST_USER_A, TEST_DATE)
+        result = await redis_repo.fetch_stat(TEST_USER_A, False, TEST_DATE)
 
         assert result == QuizResultEntry(status="FAIL", guess_count=2, hint_count=1)
 
@@ -40,13 +41,13 @@ class TestFetchStat:
             key, mapping={"status": "SUCCESS", "guesses": "3", "hints": "2"}
         )
 
-        result = await redis_repo.fetch_stat(TEST_USER_A, TEST_DATE)
+        result = await redis_repo.fetch_stat(TEST_USER_A, False, TEST_DATE)
 
         assert result == QuizResultEntry(status="SUCCESS", guess_count=3, hint_count=2)
 
     @pytest.mark.asyncio
     async def test_no_record_returns_none(self, redis_repo):
-        result = await redis_repo.fetch_stat(TEST_USER_A, TEST_DATE)
+        result = await redis_repo.fetch_stat(TEST_USER_A, False, TEST_DATE)
 
         assert result is None
 
@@ -55,7 +56,7 @@ class TestFetchStat:
         key = RedisStatKeys.from_user_and_date(TEST_USER_A, TEST_DATE).key
         await redis_client.hset(key, mapping={"status": "SUCCESS", "guesses": "1"})
 
-        result = await redis_repo.fetch_stat(TEST_USER_A, TEST_DATE)
+        result = await redis_repo.fetch_stat(TEST_USER_A, False, TEST_DATE)
 
         assert result == QuizResultEntry(status="SUCCESS", guess_count=1, hint_count=0)
 
@@ -64,7 +65,7 @@ class TestFetchStat:
         key = RedisStatKeys.from_user_and_date(TEST_USER_A, TEST_DATE).key
         await redis_client.hset(key, mapping={"status": "FAIL", "hints": "1"})
 
-        result = await redis_repo.fetch_stat(TEST_USER_A, TEST_DATE)
+        result = await redis_repo.fetch_stat(TEST_USER_A, False, TEST_DATE)
 
         assert result == QuizResultEntry(status="FAIL", guess_count=0, hint_count=1)
 
@@ -73,7 +74,7 @@ class TestFetchStat:
         key = RedisStatKeys.from_user_and_date(TEST_USER_A, TEST_DATE).key
         await redis_client.hset(key, mapping={"status": "GIVEUP"})
 
-        result = await redis_repo.fetch_stat(TEST_USER_A, TEST_DATE)
+        result = await redis_repo.fetch_stat(TEST_USER_A, False, TEST_DATE)
 
         assert result == QuizResultEntry(status="GIVEUP", guess_count=0, hint_count=0)
 
@@ -92,9 +93,9 @@ SUITE_14_DATES = [
 class TestFetchRecentStats:
     @pytest_asyncio.fixture(autouse=True)
     async def cleanup_keys(self, redis_client):
-        await cleanup_stat_keys(redis_client, [TEST_USER_A], SUITE_14_DATES)
+        await cleanup_user_stat_keys(redis_client, [TEST_USER_A], SUITE_14_DATES)
         yield
-        await cleanup_stat_keys(redis_client, [TEST_USER_A], SUITE_14_DATES)
+        await cleanup_user_stat_keys(redis_client, [TEST_USER_A], SUITE_14_DATES)
 
     @pytest.mark.asyncio
     async def test_only_queries_within_days_range(self, redis_repo, redis_client):

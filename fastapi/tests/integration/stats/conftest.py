@@ -83,11 +83,19 @@ async def repo(redis_client, db_session):
 # ---------------------------------------------------------------------------
 
 
-async def cleanup_stat_keys(redis_client, user_ids, dates):
+async def cleanup_user_stat_keys(redis_client, user_ids, dates):
     """Helper to delete Redis stat keys for given user/date combinations."""
     for u in user_ids:
         for d in dates:
             key = RedisStatKeys.from_user_and_date(u, d).key
+            await redis_client.delete(key)
+
+
+async def cleanup_guest_stat_keys(redis_client, guest_ids, dates):
+    """Helper to delete Redis guest stat keys for given guest/date combinations."""
+    for g in guest_ids:
+        for d in dates:
+            key = RedisStatKeys.from_guest_and_date(g, d).key
             await redis_client.delete(key)
 
 

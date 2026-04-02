@@ -1,5 +1,8 @@
+import uuid
+from dataclasses import dataclass
+
 import jwt
-from fastapi import Depends
+from fastapi import Depends, Header
 from fastapi.security import (
     HTTPAuthorizationCredentials,
     HTTPBasic,
@@ -9,6 +12,13 @@ from fastapi.security import (
 
 from app.cores.config import configs
 from app.exceptions import AuthenticationFailed
+
+
+@dataclass(frozen=True)
+class UserIdentity:
+    id: str
+    is_guest: bool
+
 
 # Admin HTTP Basic Auth
 security = HTTPBasic()
@@ -28,7 +38,7 @@ async def authenticate_admin(credentials: HTTPBasicCredentials = Depends(securit
 bearer_scheme = HTTPBearer(auto_error=False)
 
 
-def verify_supabase_jwt(token: str) -> dict:
+def _verify_supabase_jwt(token: str) -> dict:
     """Verify a Supabase JWT and return the payload. Raises AuthenticationFailed on failure."""
     try:
         return jwt.decode(
@@ -44,21 +54,35 @@ def verify_supabase_jwt(token: str) -> dict:
         raise AuthenticationFailed(msg="Invalid token")
 
 
-async def get_optional_user(
-    credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
-) -> str | None:
-    """Return user_id if token is present and valid, None if absent. Raises 401 if token is invalid."""
-    if credentials is None:
-        return None
-    payload = verify_supabase_jwt(credentials.credentials)
-    return payload.get("sub")
-
-
-async def get_required_user(
+async def get_current_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
 ) -> str:
     """Return user_id from a valid token. Raises 401 if missing or invalid."""
     if credentials is None:
         raise AuthenticationFailed(msg="Authorization header required")
-    payload = verify_supabase_jwt(credentials.credentials)
+    payload = _verify_supabase_jwt(credentials.credentials)
     return payload["sub"]
+
+
+async def get_current_subject(
+    credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
+    x_guest_id: str | None = Header(None),
+) -> UserIdentity:
+    """Return UserIdentity from JWT or X-Guest-Id header. Raises 401 if neither is present or both are present."""
+    if credentials is not None and x_guest_id is not None:
+        raise AuthenticationFailed(
+            msg="Provide either Authorization or X-Guest-Id, not both"
+        )
+
+    if credentials is not None:
+        payload = _verify_supabase_jwt(credentials.credentials)
+        return UserIdentity(id=payload["sub"], is_guest=False)
+
+    if x_guest_id is not None:
+        try:
+            uuid.UUID(x_guest_id)
+        except ValueError:
+            raise AuthenticationFailed(msg="Invalid guest ID format")
+        return UserIdentity(id=x_guest_id, is_guest=True)
+
+    raise AuthenticationFailed(msg="Authorization header or X-Guest-Id required")

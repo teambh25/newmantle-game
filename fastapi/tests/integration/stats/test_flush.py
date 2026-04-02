@@ -1,6 +1,5 @@
 """Integration tests for StatRepository.flush_stats.
 
-Suite 15 from docs/user-stats/test-plan.md.
 Data is prepared via direct hset, then flushed to real PostgreSQL.
 """
 
@@ -12,13 +11,18 @@ from sqlalchemy import select
 
 from app.features.common.redis_keys import RedisStatKeys
 from app.models import UserQuizResult
-from tests.integration.stats.conftest import cleanup_stat_keys, seed_auth_users
+from tests.integration.stats.conftest import (
+    cleanup_guest_stat_keys,
+    cleanup_user_stat_keys,
+    seed_auth_users,
+)
 
 TEST_USER_A = "00000000-0000-0000-0000-00000000000a"
 TEST_USER_B = "00000000-0000-0000-0000-00000000000b"
 TEST_USER_C = "00000000-0000-0000-0000-00000000000c"
 TEST_DATE = datetime.date(2026, 3, 12)
 TEST_DATE_OTHER = datetime.date(2026, 3, 13)
+TEST_GUEST_A = "00000000-0000-0000-0000-00000000000d"
 TEST_USER_IDS = [TEST_USER_A, TEST_USER_B, TEST_USER_C]
 
 
@@ -33,10 +37,14 @@ async def cleanup(redis_client, db_session):
 
     DB cleanup is handled by transaction rollback in the db_session fixture.
     """
+    await cleanup_user_stat_keys(
+        redis_client, TEST_USER_IDS, [TEST_DATE, TEST_DATE_OTHER]
+    )
     await seed_auth_users(db_session, TEST_USER_IDS)
-    await cleanup_stat_keys(redis_client, TEST_USER_IDS, [TEST_DATE, TEST_DATE_OTHER])
     yield
-    await cleanup_stat_keys(redis_client, TEST_USER_IDS, [TEST_DATE, TEST_DATE_OTHER])
+    await cleanup_user_stat_keys(
+        redis_client, TEST_USER_IDS, [TEST_DATE, TEST_DATE_OTHER]
+    )
 
 
 async def _write_stat(redis_client, user_id, date, mapping):
@@ -54,11 +62,6 @@ async def _fetch_db_row(db_session, user_id, quiz_date) -> UserQuizResult | None
         )
     )
     return result.scalar_one_or_none()
-
-
-# ---------------------------------------------------------------------------
-# Suite 15: flush basic operations
-# ---------------------------------------------------------------------------
 
 
 class TestFlushBasic:
@@ -217,3 +220,25 @@ class TestFlushBasic:
         assert row.status.value == "SUCCESS"
         assert row.guess_count == 5
         assert row.hint_count == 2
+
+
+class TestFlushExcludesGuest:
+    @pytest_asyncio.fixture(autouse=True)
+    async def cleanup(self, redis_client):
+        await cleanup_guest_stat_keys(redis_client, [TEST_GUEST_A], [TEST_DATE])
+        yield
+        await cleanup_guest_stat_keys(redis_client, [TEST_GUEST_A], [TEST_DATE])
+
+    @pytest.mark.asyncio
+    async def test_guest_key_not_flushed_to_db(self, repo, redis_client, db_session):
+        guest_key = RedisStatKeys.from_guest_and_date(TEST_GUEST_A, TEST_DATE).key
+        await redis_client.hset(
+            guest_key, mapping={"status": "SUCCESS", "guesses": "2", "hints": "0"}
+        )
+
+        flushed, skipped = await repo.flush_stats(TEST_DATE)
+
+        assert flushed == 0
+        row = await _fetch_db_row(db_session, TEST_GUEST_A, TEST_DATE)
+        assert row is None
+        assert await redis_client.exists(guest_key) == 1

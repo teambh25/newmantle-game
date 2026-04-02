@@ -1,23 +1,24 @@
 import datetime
+import uuid
 
 from loguru import logger
 
 import app.exceptions as exc
+from app.cores.auth import UserIdentity
 from app.features.common.repository import OutageDateRepository
 from app.features.stats.calculator import (
     calc_current_streak,
     calc_max_streak,
     to_calendar_status,
 )
-from app.features.stats.dto import ResultMap
+from app.features.stats.dto import QuizResultEntry, ResultMap
 from app.features.stats.repository import StatRepository
 from app.models import UserQuizStatus
 from app.schemas.stats import (
     CalendarEntry,
     CalendarStatus,
-    StatDailyResp,
-    StatOverviewResp,
     StatSummary,
+    UserType,
 )
 
 
@@ -35,32 +36,32 @@ class StatService:
     # --- Recording (best-effort: infrastructure failure must not block game responses) ---
 
     async def record_guess(
-        self, user_id: str | None, quiz_date: datetime.date, is_correct: bool
+        self, identity: UserIdentity, quiz_date: datetime.date, is_correct: bool
     ) -> None:
-        if user_id is None:
-            return
         try:
-            await self.stat_repo.record_guess(user_id, quiz_date, is_correct)
+            await self.stat_repo.record_guess(
+                identity.id, identity.is_guest, quiz_date, is_correct
+            )
         except exc.StatRecordError:
-            logger.exception(f"stat record_guess failed for {user_id}")
+            logger.exception(f"stat record_guess failed for {identity.id}")
 
-    async def record_hint(self, user_id: str | None, quiz_date: datetime.date) -> None:
-        if user_id is None:
-            return
+    async def record_hint(
+        self, identity: UserIdentity, quiz_date: datetime.date
+    ) -> None:
         try:
-            await self.stat_repo.record_hint(user_id, quiz_date)
+            await self.stat_repo.record_hint(identity.id, identity.is_guest, quiz_date)
         except exc.StatRecordError:
-            logger.exception(f"stat record_hint failed for {user_id}")
+            logger.exception(f"stat record_hint failed for {identity.id}")
 
     async def record_giveup(
-        self, user_id: str | None, quiz_date: datetime.date
+        self, identity: UserIdentity, quiz_date: datetime.date
     ) -> None:
-        if user_id is None:
-            return
         try:
-            await self.stat_repo.record_giveup(user_id, quiz_date)
+            await self.stat_repo.record_giveup(
+                identity.id, identity.is_guest, quiz_date
+            )
         except exc.StatRecordError:
-            logger.exception(f"stat record_giveup failed for {user_id}")
+            logger.exception(f"stat record_giveup failed for {identity.id}")
 
     # --- Batch ---
 
@@ -75,7 +76,7 @@ class StatService:
 
     async def get_overview(
         self, user_id: str, start_date: datetime.date, end_date: datetime.date
-    ) -> StatOverviewResp:
+    ) -> tuple[list[CalendarEntry], StatSummary]:
         if start_date > end_date:
             raise exc.InvalidDateRange("start_date must not be after end_date")
         result_map = await self.stat_repo.fetch_all_results(user_id, end_date)
@@ -84,18 +85,20 @@ class StatService:
         calendar = self._build_calendar(result_map, outage_dates, start_date, end_date)
         summary = self._build_summary(result_map, outage_dates, end_date)
 
-        return StatOverviewResp(calendar=calendar, summary=summary)
+        return calendar, summary
 
-    async def get_daily(self, user_id: str, quiz_date: datetime.date) -> StatDailyResp:
-        stat = await self.stat_repo.fetch_stat(user_id, quiz_date)
+    async def get_daily(
+        self, subject_id: uuid.UUID, user_type: UserType, quiz_date: datetime.date
+    ) -> QuizResultEntry:
+        stat = await self.stat_repo.fetch_stat(
+            str(subject_id), is_guest=(user_type == UserType.GUEST), quiz_date=quiz_date
+        )
         if stat is None:
             raise exc.StatNotFound(f"No stat found for {quiz_date}")
-        return StatDailyResp(
-            date=quiz_date,
-            status=stat.status,
-            guess_count=stat.guess_count,
-            hint_count=stat.hint_count,
-        )
+        return stat
+
+    async def link_guest_stats(self, user_id: str, guest_id: uuid.UUID) -> None:
+        await self.stat_repo.link_guest_stats(user_id, str(guest_id), self.today)
 
     # --- Private helpers ---
 

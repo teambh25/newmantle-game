@@ -5,7 +5,7 @@ from loguru import logger
 
 import app.exceptions as exc
 import app.schemas as schemas
-from app.cores.auth import get_optional_user
+from app.cores.auth import UserIdentity, get_current_subject
 from app.cores.config import configs
 from app.dependencies import get_game_service_v2, get_stat_service
 from app.features.game.v2.service import GameServiceV2
@@ -25,7 +25,7 @@ async def guess(
     word: str,
     game_service: GameServiceV2 = Depends(get_game_service_v2),
     stat_service: StatService = Depends(get_stat_service),
-    user_id: str | None = Depends(get_optional_user),
+    identity: UserIdentity = Depends(get_current_subject),
 ):
     try:
         correct, score, rank, answer = await game_service.guess(date, word)
@@ -36,7 +36,7 @@ async def guess(
         game_logger.info(f"v2 | guess | {e.msg}")
         raise HTTPException(status_code=500, detail="Can't find answer")
 
-    await stat_service.record_guess(user_id, date, correct)
+    await stat_service.record_guess(identity, date, correct)
     return schemas.GuessResp(correct=correct, score=score, rank=rank, answer=answer)
 
 
@@ -50,7 +50,7 @@ async def hint(
     rank: int = Path(ge=0, le=configs.max_rank),
     game_service: GameServiceV2 = Depends(get_game_service_v2),
     stat_service: StatService = Depends(get_stat_service),
-    user_id: str | None = Depends(get_optional_user),
+    identity: UserIdentity = Depends(get_current_subject),
 ):
     try:
         hint_word, score = await game_service.hint(date, rank)
@@ -58,7 +58,7 @@ async def hint(
         game_logger.info(f"v2 | hint | {e.msg}")
         raise HTTPException(status_code=404, detail="Invalid hint request")
 
-    await stat_service.record_hint(user_id, date)
+    await stat_service.record_hint(identity, date)
     return schemas.HintResp(hint=hint_word, score=score)
 
 
@@ -71,7 +71,7 @@ async def give_up(
     date: datetime.date,
     game_service: GameServiceV2 = Depends(get_game_service_v2),
     stat_service: StatService = Depends(get_stat_service),
-    user_id: str | None = Depends(get_optional_user),
+    identity: UserIdentity = Depends(get_current_subject),
 ):
     try:
         answer = await game_service.give_up(date)
@@ -82,5 +82,5 @@ async def give_up(
         game_logger.info(f"v2 | give up | {e.msg}")
         raise HTTPException(status_code=404, detail="Invalid give up request")
 
-    await stat_service.record_giveup(user_id, date)
+    await stat_service.record_giveup(identity, date)
     return schemas.GiveUpResp(**answer.model_dump())

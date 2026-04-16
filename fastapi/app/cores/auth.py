@@ -19,6 +19,10 @@ class UserIdentity:
     id: str
     is_guest: bool
 
+    @property
+    def user_type(self) -> str:
+        return "guest" if self.is_guest else "user"
+
 
 # Admin HTTP Basic Auth
 security = HTTPBasic()

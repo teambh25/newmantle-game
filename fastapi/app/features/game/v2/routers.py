@@ -12,7 +12,7 @@ from app.features.game.v2.service import GameServiceV2
 from app.features.stats.service import StatService
 
 game_router_v2 = APIRouter(prefix="/v2", tags=["Game-V2"])
-game_logger = logger.bind(game=True)
+event_logger = logger.bind(event=True)
 
 
 @game_router_v2.get(
@@ -29,13 +29,34 @@ async def guess(
 ):
     try:
         correct, score, rank, answer = await game_service.guess(date, word)
-    except exc.WordNotFound as e:
-        game_logger.info(f"v2 | guess | {e.msg}")
+    except exc.DateNotAllowed:
+        event_logger.info(
+            "guess_invalid_date",
+            user_id=identity.id,
+            user_type=identity.user_type,
+            date=str(date),
+        )
+        raise HTTPException(status_code=422, detail="Invalid guess request")
+    except exc.WordNotFound:
+        event_logger.info(
+            "guess_invalid_word",
+            user_id=identity.id,
+            user_type=identity.user_type,
+            date=str(date),
+            word=word,
+        )
         raise HTTPException(status_code=404, detail="Invalid guess request")
-    except exc.QuizNotFound as e:
-        game_logger.info(f"v2 | guess | {e.msg}")
-        raise HTTPException(status_code=500, detail="Can't find answer")
 
+    event_logger.info(
+        "guess",
+        user_id=identity.id,
+        user_type=identity.user_type,
+        date=str(date),
+        correct=correct,
+        word=word,
+        rank=rank,
+        score=score,
+    )
     await stat_service.record_guess(identity, date, correct)
     return schemas.GuessResp(correct=correct, score=score, rank=rank, answer=answer)
 
@@ -54,10 +75,24 @@ async def hint(
 ):
     try:
         hint_word, score = await game_service.hint(date, rank)
-    except exc.RankNotFound as e:
-        game_logger.info(f"v2 | hint | {e.msg}")
-        raise HTTPException(status_code=404, detail="Invalid hint request")
+    except exc.DateNotAllowed:
+        event_logger.info(
+            "hint_invalid_date",
+            user_id=identity.id,
+            user_type=identity.user_type,
+            date=str(date),
+        )
+        raise HTTPException(status_code=422, detail="Invalid hint request")
 
+    event_logger.info(
+        "hint",
+        user_id=identity.id,
+        user_type=identity.user_type,
+        date=str(date),
+        rank=rank,
+        hint=hint_word,
+        score=score,
+    )
     await stat_service.record_hint(identity, date)
     return schemas.HintResp(hint=hint_word, score=score)
 
@@ -75,12 +110,21 @@ async def give_up(
 ):
     try:
         answer = await game_service.give_up(date)
-    except exc.DateNotAllowed as e:
-        game_logger.info(f"v2 | give up | {e.msg}")
+    except exc.DateNotAllowed:
+        event_logger.info(
+            "give_up_invalid_date",
+            user_id=identity.id,
+            user_type=identity.user_type,
+            date=str(date),
+        )
         raise HTTPException(status_code=422, detail="Invalid give up request")
-    except exc.QuizNotFound as e:
-        game_logger.info(f"v2 | give up | {e.msg}")
-        raise HTTPException(status_code=404, detail="Invalid give up request")
 
+    event_logger.info(
+        "give_up",
+        user_id=identity.id,
+        user_type=identity.user_type,
+        date=str(date),
+        answer=answer.word,
+    )
     await stat_service.record_giveup(identity, date)
     return schemas.GiveUpResp(**answer.model_dump())

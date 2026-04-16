@@ -5,10 +5,10 @@ from .exceptions import AuthenticationFailed
 
 
 async def global_exception_handler(request: Request, exc: Exception):
-    logger.exception("")
+    logger.exception("Unhandled exception")
     raise HTTPException(status_code=500, detail="Server error")
 
 
 async def authentication_exception_handler(request: Request, exc: AuthenticationFailed):
-    logger.error(str(exc))
+    logger.info(str(exc))
     raise HTTPException(status_code=401, detail="Authentication failed")

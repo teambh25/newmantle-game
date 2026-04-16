@@ -1,3 +1,4 @@
+import datetime
 import json
 
 from loguru import logger
@@ -5,7 +6,9 @@ from loguru import logger
 
 def _format_event(record: dict) -> str:
     data = {
-        "time": record["time"].strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "time": record["time"]
+        .astimezone(datetime.timezone.utc)
+        .strftime("%Y-%m-%dT%H:%M:%SZ"),
         "action": record["message"],
         **{k: v for k, v in record["extra"].items() if k != "event"},
     }

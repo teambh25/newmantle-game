@@ -27,7 +27,7 @@ async def upsert_quiz(
     except exc.QuizValidationError as e:
         logger.error(str(e))
         raise HTTPException(status_code=422, detail=e.msg)
-    logger.success(f"quiz created: {quiz.date}, {quiz.answer}")
+    logger.success(f"date={quiz.date} answer={quiz.answer.word}")
     return {quiz.date: quiz.answer}
 
 
@@ -55,7 +55,7 @@ async def delete_answer(
     except exc.QuizInconsistentError as e:
         logger.error(str(e))
         raise HTTPException(status_code=500, detail=e.msg)
-    logger.success(f"quiz deleted: {date}")
+    logger.success(f"date={date}")
 
 
 @admin_router.get(
@@ -79,7 +79,7 @@ async def create_outage_date(
     admin_service: AdminService = Depends(get_admin_service),
 ):
     await admin_service.create_outage_date(body.date)
-    logger.success(f"outage date created: {body.date}")
+    logger.success(f"date={body.date}")
     return {"date": body.date}
 
 
@@ -96,7 +96,7 @@ async def delete_outage_date(
     except exc.OutageDateNotFound as e:
         logger.error(str(e))
         raise HTTPException(status_code=404, detail=e.msg)
-    logger.success(f"outage date deleted: {date}")
+    logger.success(f"date={date}")
     return {"date": date}
 
 
@@ -110,9 +110,7 @@ async def flush_stats(
     stat_service: StatService = Depends(get_stat_service),
 ):
     flushed_count, skipped_count = await stat_service.flush_to_db(body.date)
-    logger.success(
-        f"stats flushed: date={body.date}, flushed={flushed_count}, skipped={skipped_count}"
-    )
+    logger.success(f"date={body.date} flushed={flushed_count} skipped={skipped_count}")
     return schemas.FlushResponse(
         date=body.date,
         flushed_count=flushed_count,

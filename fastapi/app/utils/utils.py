@@ -31,12 +31,6 @@ def get_today_date():
     return datetime.datetime.now(ZoneInfo("Asia/Seoul")).date()
 
 
-def get_day_after_tomorrow_1am(date: datetime.date):
-    return datetime.datetime.combine(
-        date + datetime.timedelta(days=1), datetime.time(hour=16, minute=0, second=0)
-    )  # two days later 1 am (KST, UTC+9)
-
-
 def get_initial_consonant_index(ch: str):
     return (ord(ch) - ord("가")) // (
         21 * 28
@@ -53,7 +47,7 @@ def is_hangul_string(s: str) -> bool:
     return s != "" and all(is_hangul_char(ch) for ch in s)
 
 
-def is_future(date: datetime.date, today: datetime.date):
+def is_future(date: datetime.date, today: datetime.date) -> bool:
     return date > today
 
 

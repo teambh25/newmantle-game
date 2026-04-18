@@ -4,7 +4,7 @@ import pytest
 
 import app.exceptions as exc
 import app.schemas as schemas
-from app.features.common.redis_keys import ANSWER_INDICATOR
+from app.features.common.redis_keys import ANSWER_INDICATOR, RedisQuizKeys
 from app.features.game.repository import GameRepo
 from app.features.game.v2.service import GameServiceV2
 
@@ -16,8 +16,7 @@ def today():
 
 @pytest.fixture
 def mock_game_repo(mocker):
-    mock_game_repo = mocker.MagicMock(spec=GameRepo)
-    return mock_game_repo
+    return mocker.MagicMock(spec=GameRepo)
 
 
 @pytest.fixture
@@ -30,136 +29,141 @@ def game_service(mock_game_repo, today):
     return GameServiceV2(mock_game_repo, today)
 
 
-@pytest.mark.asyncio
-async def test_guess_sucess_with_answer(
-    game_service, mock_game_repo, mock_answer, today
-):
-    """
-    Test the 'guess' method for a answer word.
-    """
-    mock_game_repo.fetch_score_rank_by_word.return_value = ANSWER_INDICATOR
-    mock_game_repo.fetch_answer_by_date.return_value = mock_answer.model_dump_json()
+class TestGuess:
+    @pytest.mark.asyncio
+    async def test_success_with_answer(
+        self, game_service, mock_game_repo, mock_answer, today
+    ):
+        """Test the 'guess' method for a answer word."""
+        mock_game_repo.fetch_key_exists_and_score_rank.return_value = (
+            True,
+            ANSWER_INDICATOR,
+        )
+        mock_game_repo.fetch_answer_by_date.return_value = mock_answer.model_dump_json()
 
-    correct, score, rank, answer = await game_service.guess(today, mock_answer.word)
-    assert (correct, score, rank, answer) == (True, None, None, mock_answer)
+        correct, score, rank, answer = await game_service.guess(today, mock_answer.word)
+        assert (correct, score, rank, answer) == (True, None, None, mock_answer)
 
+    @pytest.mark.asyncio
+    async def test_success_with_non_answer(self, game_service, mock_game_repo, today):
+        """Test the 'guess' method for a non-answer word."""
+        mock_game_repo.fetch_key_exists_and_score_rank.return_value = (True, "95.5|120")
 
-@pytest.mark.asyncio
-async def test_guess_sucess_with_non_answer(game_service, mock_game_repo, today):
-    """
-    Test the 'guess' method for a non answer word.
-    """
-    non_answer = "단어"
-    mock_score_rank = "95.5|120"  # score|rank
-    mock_game_repo.fetch_score_rank_by_word.return_value = mock_score_rank
+        correct, score, rank, answer = await game_service.guess(today, "단어")
+        assert (correct, score, rank, answer) == (False, 95.5, 120, None)
 
-    correct, score, rank, answer = await game_service.guess(today, non_answer)
+    @pytest.mark.parametrize("days", [1, 2, 3])
+    @pytest.mark.asyncio
+    async def test_raises_when_date_not_allowed_future(self, game_service, today, days):
+        """Test the 'guess' method for future dates."""
+        date = today + datetime.timedelta(days=days)
+        with pytest.raises(exc.DateNotAllowed):
+            await game_service.guess(date, "단어")
 
-    assert (correct, score, rank, answer) == (False, 95.5, 120, None)
+    @pytest.mark.asyncio
+    async def test_raises_when_date_not_allowed_too_old(self, game_service, today):
+        """Test the 'guess' method for dates beyond the TTL window."""
+        date = today - datetime.timedelta(days=RedisQuizKeys.TTL_DAYS)
+        with pytest.raises(exc.DateNotAllowed):
+            await game_service.guess(date, "단어")
 
+    @pytest.mark.asyncio
+    async def test_raises_when_word_not_found(
+        self, game_service, mock_game_repo, today
+    ):
+        """Test the 'guess' method when word doesn't exist in a valid quiz."""
+        mock_game_repo.fetch_key_exists_and_score_rank.return_value = (True, None)
 
-@pytest.mark.asyncio
-async def test_guess_raises_when_word_not_found(game_service, mock_game_repo, today):
-    """
-    Test the 'guess' method when can't find word (repo returns None).
-    """
-    invalid_word = "없는 단어"
-    mock_game_repo.fetch_score_rank_by_word.return_value = None
+        with pytest.raises(exc.WordNotFound):
+            await game_service.guess(today, "없는 단어")
 
-    with pytest.raises(exc.WordNotFound):
-        await game_service.guess(today, invalid_word)
+    @pytest.mark.asyncio
+    async def test_raises_when_quiz_not_found(
+        self, game_service, mock_game_repo, today
+    ):
+        """Test the 'guess' method when quiz data is missing for a valid date."""
+        mock_game_repo.fetch_key_exists_and_score_rank.return_value = (False, None)
 
-
-@pytest.mark.asyncio
-async def test_hint_success_with_answer(game_service, mock_game_repo, today):
-    """
-    Test the 'hint' method for answer(=rank 0), which should return the initial consonant.
-    """
-    answer_rank = 0
-    initial_consonant = "ㅈㄷ"  # 정답 단어 : 정답
-    mock_game_repo.fetch_word_score_by_rank.return_value = initial_consonant
-
-    hint_word, score = await game_service.hint(today, answer_rank)
-
-    assert (hint_word, score) == (initial_consonant, None)
-
-
-@pytest.mark.asyncio
-async def test_hint_success_with_non_answer(game_service, mock_game_repo, today):
-    """
-    Test the 'hint' method for a non answer(rank > 0), which should return a word and score.
-    """
-    mock_rank = 10
-    word_score = "사과|98.7"  # word|score
-    mock_game_repo.fetch_word_score_by_rank.return_value = word_score
-
-    hint_word, score = await game_service.hint(today, mock_rank)
-
-    assert (hint_word, score) == ("사과", 98.7)
+        with pytest.raises(RuntimeError):
+            await game_service.guess(today, "단어")
 
 
-@pytest.mark.asyncio
-async def test_hint_raises_with_when_rank_not_found(
-    game_service, mock_game_repo, today
-):
-    """
-    Test the 'hint' method for a rank that does not exist in the repo.
-    """
-    invalid_rank = -1
-    mock_game_repo.fetch_word_score_by_rank.return_value = None
+class TestHint:
+    @pytest.mark.asyncio
+    async def test_success_with_answer(self, game_service, mock_game_repo, today):
+        """Test the 'hint' method for answer (rank 0), returns initial consonant."""
+        initial_consonant = "ㅈㄷ"
+        mock_game_repo.fetch_word_score.return_value = initial_consonant
 
-    with pytest.raises(exc.RankNotFound):
-        await game_service.hint(today, invalid_rank)
+        hint_word, score = await game_service.hint(today, 0)
+        assert (hint_word, score) == (initial_consonant, None)
 
+    @pytest.mark.asyncio
+    async def test_success_with_non_answer(self, game_service, mock_game_repo, today):
+        """Test the 'hint' method for a non-answer rank, returns word and score."""
+        mock_game_repo.fetch_word_score.return_value = "사과|98.7"
 
-@pytest.mark.parametrize(
-    "days",
-    (
-        0,  # today
-        1,  # yesterday
-        2,
-        3,
-    ),
-)
-@pytest.mark.asyncio
-async def test_give_up_sucess_with_non_future_date(
-    game_service, mock_game_repo, mock_answer, today, days
-):
-    """
-    Test the 'give up' method for a date that is today.
-    """
-    date = today - datetime.timedelta(days=days)
-    mock_game_repo.fetch_answer_by_date.return_value = mock_answer.model_dump_json()
+        hint_word, score = await game_service.hint(today, 10)
+        assert (hint_word, score) == ("사과", 98.7)
 
-    result = await game_service.give_up(date)
+    @pytest.mark.parametrize("days", [1, 2, 3])
+    @pytest.mark.asyncio
+    async def test_raises_when_date_not_allowed_future(self, game_service, today, days):
+        """Test the 'hint' method for future dates."""
+        date = today + datetime.timedelta(days=days)
+        with pytest.raises(exc.DateNotAllowed):
+            await game_service.hint(date, 1)
 
-    assert result == mock_answer
+    @pytest.mark.asyncio
+    async def test_raises_when_date_not_allowed_too_old(self, game_service, today):
+        """Test the 'hint' method for dates beyond the TTL window."""
+        date = today - datetime.timedelta(days=RedisQuizKeys.TTL_DAYS)
+        with pytest.raises(exc.DateNotAllowed):
+            await game_service.hint(date, 1)
 
+    @pytest.mark.asyncio
+    async def test_raises_when_quiz_not_found(
+        self, game_service, mock_game_repo, today
+    ):
+        """Test the 'hint' method when rank data is missing — treated as a data integrity issue."""
+        # rank is validated by the router, so None here means server-side data is missing.
+        mock_game_repo.fetch_word_score.return_value = None
 
-@pytest.mark.parametrize(
-    "days",
-    (
-        1,  # tomorrow
-        2,
-        3,
-    ),
-)
-@pytest.mark.asyncio
-async def test_give_up_raises_with_future_date(game_service, today, days):
-    """
-    Test the 'give up' method for a date that is after today.
-    """
-    date = today + datetime.timedelta(days=days)
-    with pytest.raises(exc.DateNotAllowed):
-        await game_service.give_up(date)
+        with pytest.raises(RuntimeError):
+            await game_service.hint(today, 1)
 
 
-@pytest.mark.asyncio
-async def test_give_up_raises_when_quiz_not_found(game_service, mock_game_repo):
-    """
-    Test the 'give up' method for a date that doesn't exist answer.
-    """
-    no_quiz_date = datetime.date(2000, 1, 30)
-    mock_game_repo.fetch_answer_by_date.return_value = None
-    with pytest.raises(exc.QuizNotFound):
-        await game_service.give_up(no_quiz_date)
+class TestGiveUp:
+    @pytest.mark.asyncio
+    async def test_success_with_valid_date(
+        self, game_service, mock_game_repo, mock_answer, today
+    ):
+        """Test the 'give_up' method for a valid date."""
+        mock_game_repo.fetch_answer_by_date.return_value = mock_answer.model_dump_json()
+
+        result = await game_service.give_up(today)
+        assert result == mock_answer
+
+    @pytest.mark.parametrize("days", [1, 2, 3])
+    @pytest.mark.asyncio
+    async def test_raises_when_date_not_allowed_future(self, game_service, today, days):
+        """Test the 'give_up' method for future dates."""
+        date = today + datetime.timedelta(days=days)
+        with pytest.raises(exc.DateNotAllowed):
+            await game_service.give_up(date)
+
+    @pytest.mark.asyncio
+    async def test_raises_when_date_not_allowed_too_old(self, game_service, today):
+        """Test the 'give_up' method for dates beyond the TTL window."""
+        date = today - datetime.timedelta(days=RedisQuizKeys.TTL_DAYS)
+        with pytest.raises(exc.DateNotAllowed):
+            await game_service.give_up(date)
+
+    @pytest.mark.asyncio
+    async def test_raises_when_quiz_not_found(
+        self, game_service, mock_game_repo, today
+    ):
+        """Test the 'give_up' method when quiz data is missing for a valid date."""
+        mock_game_repo.fetch_answer_by_date.return_value = None
+        with pytest.raises(RuntimeError):
+            await game_service.give_up(today)

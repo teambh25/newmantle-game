@@ -1,12 +1,15 @@
 import datetime
 from dataclasses import dataclass
 from typing import ClassVar, Dict
+from zoneinfo import ZoneInfo
 
 ANSWER_INDICATOR = "answer"
 
 
 @dataclass(frozen=True)
 class RedisQuizKeys:
+    TTL_DAYS: ClassVar[int] = 2
+
     answers_key: str
     scores_key: str
     ranking_key: str
@@ -18,6 +21,18 @@ class RedisQuizKeys:
             scores_key=f"quiz:{date}:scores",
             ranking_key=f"quiz:{date}:ranking",
         )
+
+    @classmethod
+    def get_expiry(cls, date: datetime.date) -> datetime.datetime:
+        # 5-minute buffer after midnight KST to handle in-flight requests
+        return datetime.datetime.combine(
+            date + datetime.timedelta(days=cls.TTL_DAYS),
+            datetime.time(hour=0, minute=5, second=0, tzinfo=ZoneInfo("Asia/Seoul")),
+        )
+
+    @classmethod
+    def is_expired(cls, date: datetime.date, today: datetime.date) -> bool:
+        return (today - date).days >= cls.TTL_DAYS
 
     @staticmethod
     def extract_date(key: str):

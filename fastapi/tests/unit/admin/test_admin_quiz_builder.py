@@ -1,4 +1,5 @@
 import datetime
+from zoneinfo import ZoneInfo
 
 from app.features.admin.quiz_builder import QuizBuilder
 from app.features.common.redis_keys import ANSWER_INDICATOR
@@ -24,5 +25,6 @@ def test_build_redis_quiz_success(quiz_factory, tomorrow):
     assert rd_quiz.ranking_map[1] == "사과|95.00"
     assert rd_quiz.ranking_map[2] == "배|90.00"
     assert rd_quiz.expire_at == datetime.datetime.combine(
-        tomorrow, datetime.time()
-    ) + datetime.timedelta(days=1, hours=16)  # Expires at 1 AM, two days later
+        tomorrow + datetime.timedelta(days=2),
+        datetime.time(hour=0, minute=5, second=0, tzinfo=ZoneInfo("Asia/Seoul")),
+    )  # Expires at 00:05 KST two days after the quiz date (5-minute buffer)

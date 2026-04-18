@@ -19,7 +19,7 @@ class QuizBuilder:
         sorted_scores = sorted(quiz.scores.items(), key=lambda x: x[1], reverse=True)
         scores_map = self._get_scores_map(sorted_scores, quiz.answer.word)
         ranking_map = self._get_ranking_map(sorted_scores, quiz.answer.word)
-        expire_datetime = utils.get_day_after_tomorrow_1am(quiz.date)
+        expire_datetime = RedisQuizKeys.get_expiry(quiz.date)
         rd_quiz = RedisQuizData(
             keys=redis_keys,
             answer=ans_json_str,

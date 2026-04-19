@@ -8,12 +8,19 @@ class AdminRepo:
         self.rd = rd
 
     async def upsert_quiz(self, quiz: RedisQuizData):
+        # Write to temp keys then RENAME so stale fields from a previous
+        # upsert (e.g. shrunk word pool) are dropped atomically.
+        tmp_scores_key = quiz.keys.scores_key + ":tmp"
+        tmp_ranking_key = quiz.keys.ranking_key + ":tmp"
         async with self.rd.pipeline(transaction=True) as pipe:
+            pipe.unlink(tmp_scores_key, tmp_ranking_key)
+            pipe.hset(tmp_scores_key, mapping=quiz.scores_map)
+            pipe.hset(tmp_ranking_key, mapping=quiz.ranking_map)
+            pipe.expireat(tmp_scores_key, quiz.expire_at)
+            pipe.expireat(tmp_ranking_key, quiz.expire_at)
+            pipe.rename(tmp_scores_key, quiz.keys.scores_key)
+            pipe.rename(tmp_ranking_key, quiz.keys.ranking_key)
             pipe.set(quiz.keys.answers_key, quiz.answer, exat=quiz.expire_at)
-            pipe.hset(quiz.keys.scores_key, mapping=quiz.scores_map)
-            pipe.expireat(quiz.keys.scores_key, quiz.expire_at)
-            pipe.hset(quiz.keys.ranking_key, mapping=quiz.ranking_map)
-            pipe.expireat(quiz.keys.ranking_key, quiz.expire_at)
             pipe.sadd("quiz:index", quiz.keys.answers_key)
             await pipe.execute()
 
@@ -39,7 +46,7 @@ class AdminRepo:
 
     async def delete_quiz(self, keys: RedisQuizKeys):
         async with self.rd.pipeline(transaction=True) as pipe:
-            pipe.delete(keys.answers_key, keys.scores_key, keys.ranking_key)
+            pipe.unlink(keys.answers_key, keys.scores_key, keys.ranking_key)
             pipe.srem("quiz:index", keys.answers_key)
             results = await pipe.execute()
         return results[0]

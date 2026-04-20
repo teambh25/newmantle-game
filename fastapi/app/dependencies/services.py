@@ -14,7 +14,6 @@ from app.features.admin.service import AdminService
 from app.features.admin.validator import Validator
 from app.features.common.repository import OutageDateRepository
 from app.features.game.repository import GameRepo
-from app.features.game.v1.service import GameServiceV1
 from app.features.game.v2.service import GameServiceV2
 from app.features.stats.repository import StatRepository
 from app.features.stats.service import StatService
@@ -57,13 +56,6 @@ def get_admin_service(
         quiz_builder=QuizBuilder(configs.max_rank),
         validator=Validator(today, configs.max_rank),
     )
-
-
-def get_game_service_v1(
-    admin_repo: GameRepo = Depends(get_game_repo),
-    today: datetime.date = Depends(utils.get_today_date),
-):
-    return GameServiceV1(admin_repo, today)
 
 
 def get_game_service_v2(

@@ -8,7 +8,7 @@ services:
       - ./fastapi:/src
       - ./.env:/src/.env
     depends_on:
-      - redis
+      - redis-test
       - postgres-test
   postgres-test:
     image: postgres:alpine
@@ -18,11 +18,5 @@ services:
       POSTGRES_DB: test_db
     ports:
       - "5433:5432"
-  redis:
+  redis-test:
     image: redis:alpine
-    ports:
-      - 6379:6379
-    volumes:
-      - ./redis/data:/data
-      - ./redis/conf/redis.conf:/usr/local/etc/redis/redis.conf:ro
-    command: redis-server /usr/local/etc/redis/redis.conf

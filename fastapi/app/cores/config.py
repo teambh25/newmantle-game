@@ -14,9 +14,10 @@ class Configs(BaseSettings):
     jwt_secret: str
     jwt_issuer: str
     database_url: str
-    test_database_url: str = ""
     db_pool_size: int
     db_max_overflow: int
+    test_redis_url: str = ""
+    test_database_url: str = ""
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 

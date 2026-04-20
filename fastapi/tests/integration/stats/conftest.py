@@ -1,5 +1,4 @@
 import pytest_asyncio
-import redis.asyncio as redis
 from sqlalchemy import Column, Table, Uuid, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -9,6 +8,8 @@ from app.features.common.redis_keys import RedisStatKeys
 from app.features.stats.repository import StatRepository
 from app.models.models import Base
 
+# redis_client fixture is defined in tests/integration/conftest.py
+
 # Stub table for auth.users (Supabase auth) to satisfy FK constraints in tests.
 # Uses Table directly instead of a model class to avoid duplicate class warnings.
 if "auth.users" not in Base.metadata.tables:
@@ -17,13 +18,6 @@ if "auth.users" not in Base.metadata.tables:
 # ---------------------------------------------------------------------------
 # Redis fixtures
 # ---------------------------------------------------------------------------
-
-
-@pytest_asyncio.fixture
-async def redis_client():
-    client = redis.from_url(configs.redis_url, decode_responses=True)
-    yield client
-    await client.aclose()
 
 
 @pytest_asyncio.fixture

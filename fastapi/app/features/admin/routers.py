@@ -1,6 +1,7 @@
 import datetime
+import time
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from loguru import logger
 
 import app.exceptions as exc
@@ -19,15 +20,22 @@ admin_router = APIRouter(
 
 @admin_router.put("/quizzes", status_code=status.HTTP_200_OK)
 async def upsert_quiz(
-    quiz: schemas.Quiz,
+    request: Request,
     admin_service: AdminService = Depends(get_admin_service),
 ):
+    t0 = time.perf_counter()
+    body = await request.body()
+    t1 = time.perf_counter()
+    quiz = schemas.Quiz.model_validate_json(body)
+    t2 = time.perf_counter()
+    logger.debug(f"body_read={t1 - t0:.3f}s, pydantic_parse={t2 - t1:.3f}s")
+
     try:
         await admin_service.upsert_quiz(quiz)
     except exc.QuizValidationError as e:
         logger.error(str(e))
         raise HTTPException(status_code=422, detail=e.msg)
-    logger.success(f"date={quiz.date} answer={quiz.answer.word}")
+    logger.success(f"date={quiz.date} answer={quiz.answer.word} word_count={len(quiz.scores)}")
     return {quiz.date: quiz.answer}
 
 

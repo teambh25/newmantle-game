@@ -1,5 +1,7 @@
 import datetime
+import time
 from dataclasses import fields
+from loguru import logger
 
 import app.exceptions as exc
 import app.schemas as schemas
@@ -25,8 +27,14 @@ class AdminService:
 
     async def upsert_quiz(self, quiz: schemas.Quiz):
         self.validator.validate_quiz(quiz)
+
+        t0 = time.perf_counter()
         rd_quiz = self.quiz_builder.build_redis_quiz(quiz)
+        t1 = time.perf_counter()
         await self.admin_repo.upsert_quiz(rd_quiz)
+        t2 = time.perf_counter()
+
+        logger.debug(f"upsert_quiz build={t1 - t0:.3f}s, redis={t2 - t1:.3f}s")
 
     async def read_all_answers(self):
         answer_keys, answers = await self.admin_repo.fetch_all_answers()

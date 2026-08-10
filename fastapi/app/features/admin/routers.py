@@ -35,7 +35,9 @@ async def upsert_quiz(
     except exc.QuizValidationError as e:
         logger.error(str(e))
         raise HTTPException(status_code=422, detail=e.msg)
-    logger.success(f"date={quiz.date} answer={quiz.answer.word} word_count={len(quiz.scores)}")
+    logger.success(
+        f"date={quiz.date} answer={quiz.answer.word} word_count={len(quiz.scores)}"
+    )
     return {quiz.date: quiz.answer}
 
 

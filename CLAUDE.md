@@ -53,7 +53,7 @@ Layered architecture: **Routers -> Services -> Repositories**
 - **Korean text**: Answers must be pure Hangul (가-힣). `utils.py` handles validation and initial consonant extraction.
 - **API versioning**: v1 returns simple responses; v2 returns answer metadata on correct guess / give-up.
 - **Exception flow**: Custom `BaseAppException` hierarchy -> exception handlers in `exceptions/handlers.py`.
-- **Logging**: Loguru with two sinks - `logs/app.log` (weekly) and `logs/game/{date}.log` (daily).
+- **Logging**: Loguru with two sinks - `logs/app.log` (weekly rotation) and `logs/raw-events/{date}.{pid}.jsonl` (daily rotation at 15:00 UTC, uncompressed, one file per worker), both retained for 1 month. Event retention is a custom cleanup of the whole directory by filename date (same axis as the collection DAG) because loguru's retention only sees the current PID's files.
 - **Tests**: pytest + pytest-asyncio + pytest-mock. Tests are in `fastapi/tests/unit/`.
 
 ##
